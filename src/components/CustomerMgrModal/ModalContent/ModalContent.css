@@ -1,0 +1,12 @@
+.customer-mgr-modal-title {
+    font-weight: bold;
+}
+.customer-mgr-modal-input {
+    padding: 5px 10px;
+    width: 50%;
+}
+@media only screen and (max-width: 765px) {
+    .customer-mgr-modal-input {
+        width: 100%;
+    }
+}

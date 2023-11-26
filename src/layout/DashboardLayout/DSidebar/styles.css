@@ -1,0 +1,52 @@
+.MuiListItemButton-root.Mui-selected {
+    background-color: #1C1B20;
+    color: white;
+    margin: 3px 18px;
+    border-radius: 17px;
+    padding: 10px 18px;
+    border-right: 0px;
+}
+
+.MuiListItemButton-root.Mui-selected:hover {
+    background-color: #1C1B20;
+    border-right: 0px;
+    color: white;
+    margin: 3px 18px;
+    border-radius: 17px;
+    padding: 10px 18px;
+}
+
+.MuiListItemButton-root {
+    margin: 3px 18px;
+    border-radius: 17px;
+    padding: 10px 18px;
+}
+
+.MuiListItemButton-root:hover {
+    background-color: #1C1B20;
+    color: white;
+    margin: 3px 18px;
+    border-radius: 17px;
+    padding: 10px 18px;
+    border-right: 0px;
+}
+
+.MuiListItemButton-root:hover svg {
+    fill: white;
+}
+
+.MuiListItemButton-root:hover .MuiTypography-root {
+    color: white;
+}
+
+.MuiListItemButton-root.Mui-selected svg {
+    fill: white;
+}
+
+.MuiListItemButton-root.Mui-selected .MuiTypography-root {
+    color: white;
+}
+
+.MuiDrawer-paper {
+    background-color: #F9F9F9;
+}

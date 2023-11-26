@@ -1,0 +1,123 @@
+.boxes {
+    padding: 25px 25px;
+    border-radius: 30px;
+}
+
+.boxes h3 {
+    margin: 0;
+}
+
+.boxes p {
+    margin: 0;
+}
+
+.blue-box {
+    background: #E7EEFE;
+}
+
+.blue-box p {
+    color: #999DAB;
+}
+
+.blue-box svg {
+    background: #0C47F5;
+    fill: white;
+    color: white;
+}
+
+.blue-box h2 {
+    color: black;
+}
+
+.yellow-box {
+    background: #FFEFE2;
+}
+
+.yellow-box p {
+    color: #999DAB;
+}
+
+.yellow-box h2 {
+    color: black;
+}
+
+.yellow-box svg {
+    background: #D1814C;
+    fill: white;
+    color: white;
+}
+
+.black-box {
+    background: #1C1B20;
+}
+
+.black-box svg {
+    background: #D1814C;
+    fill: white;
+    color: white;
+}
+
+.black-box > h3, .black-box h2, .black-box p {
+    color: #FCFCFB;
+}
+
+.black-box p {
+    color: #7E7E87
+}
+
+.black-box h3 {
+    color: #FCFCFB;
+}
+
+.black-box > h2 {
+    color: #FCFCFB;
+}
+
+.black-box > p {
+    color: #FCFCFB;
+}
+
+.head-content {
+    display: flex;
+    align-items: center;
+}
+
+.head-content svg {
+    margin-right: 10px;
+    width: 40px;
+    height: 40px;
+    padding: 6px;
+    border-radius: 10px;
+}
+
+.price-growth {
+    font-size: 18px;
+    color: #9AC6A9;
+    font-weight: 500;
+}
+
+.bottom-content {
+    display: flex;
+    font-size: 16px;
+    font-weight: 700;
+}
+
+.bottom-content svg {
+    background: transparent;
+    color: grey;
+    fill: #9ac9c7;
+}
+
+.black-box .bottom-content {
+    color: white;
+}
+
+.bottom-content .currency {
+    font-weight: 300;
+    margin-left: 5px;
+    color: grey;
+}
+
+.bottom-content div {
+    margin-right: 10px;
+}

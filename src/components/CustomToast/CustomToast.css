@@ -1,0 +1,26 @@
+.custom-toast-container {
+    background: #353535 !important;
+    color: white !important;
+    min-height: 0px !important;
+}
+.custom-toast-progress-success {
+    background: #32beb9 !important;
+}
+.custom-toast-progress-error {
+    background: #ff4d4f !important;
+}
+.custom-toast-progress-info {
+    background: #347fb1 !important;
+}
+.custom-toast-progress-warn {
+    background: #f1c30b !important;
+}
+.custom-toast-container > button{
+    width: 35px;
+    height: 35px;
+}
+.custom-toast-container > button > svg{
+    width: 20px;
+    height: 20px;
+    fill: white;
+}

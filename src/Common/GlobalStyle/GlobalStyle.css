@@ -1,0 +1,134 @@
+:root {
+  --primary: #32beb9;
+  --primary-hover: #59e7e3;
+  --text-color: #f7f7f7;
+  --background: #272727;
+  --text-color-second: #57c4c1;
+  --error: #ff4d4f;
+  /* --layout-Default-width: 1150px;
+    --layout-Default-space-width: 24px;
+    --width-search-button: 52px;
+    --header-default-height: 60px; */
+  --font-family: 'Source Sans Pro', sans-serif;
+}
+
+.wrapper {
+  font-family: var(--font-family);
+  color: var(--text-color);
+  background-color: var(--background);
+  min-height: 100vh;
+  font-size: 1rem;
+  font-weight: 400;
+  overflow-x: hidden;
+}
+[data-rmiz-modal-overlay='visible'] {
+  background-color: rgba(0, 0, 0, 0.8) !important;
+}
+.wrapper h1,
+.wrapper h2,
+.wrapper h3,
+.wrapper h4,
+.wrapper h5,
+.wrapper h6,
+.wrapper p {
+  margin: 0;
+}
+
+.wrapper div {
+  box-sizing: border-box;
+}
+
+.wrapper input {
+  border: none;
+  outline: none;
+}
+
+.wrapper a {
+  /* color: var(--text-color-second); */
+  /* text-decoration: none; */
+  cursor: pointer;
+}
+
+.pin-wrapper label {
+  display: none;
+}
+
+.custom-button {
+  cursor: pointer;
+  opacity: 1;
+  transition: 200ms all ease;
+}
+.custom-button:hover {
+  opacity: 0.8;
+}
+.custom-button:active {
+  opacity: 0.95;
+}
+.custom-button-underline{
+  text-decoration:none;
+}
+.custom-button-underline:hover {
+  text-decoration: underline;
+}
+
+.noselect {
+  -webkit-touch-callout: none; /* iOS Safari */
+  -webkit-user-select: none; /* Safari */
+  -khtml-user-select: none; /* Konqueror HTML */
+  -moz-user-select: none; /* Old versions of Firefox */
+  -ms-user-select: none; /* Internet Explorer/Edge */
+  user-select: none; /* Non-prefixed version, currently
+                                    supported by Chrome, Edge, Opera and Firefox */
+}
+/* responsible font size */
+.text-size-h1 {
+  font-size: clamp(2.44rem, 2.38vw + 1.85rem, 3.75rem);
+  line-height: 1.21;
+  font-weight: 600;
+}
+.text-size-h2 {
+  font-size: clamp(1.95rem, 1.56vw + 1.56rem, 2.81rem);
+  line-height: 1.27;
+  font-weight: 600;
+}
+.text-size-h3 {
+  font-size: clamp(1.56rem, 1vw + 1.31rem, 2.11rem);
+  line-height: 1.33;
+  font-weight: 500;
+}
+.text-size-h4 {
+  font-size: clamp(1.25rem, 0.61vw + 1.1rem, 1.58rem);
+  line-height: 1.4;
+  font-weight: 400;
+}
+.text-size-h5 {
+  font-size: clamp(1rem, 0.34vw + 0.91rem, 1.19rem);
+  line-height: 1.5;
+  font-weight: 300;
+}
+.text-size-h6 {
+  font-size: clamp(0.8rem, 0.17vw + 0.76rem, 0.89rem);
+  line-height: 1.57;
+  font-weight: 300;
+}
+.text-size-h7 {
+  font-size: clamp(0.7rem, 0.17vw + 0.76rem, 0.76rem);
+  line-height: 1.57;
+  font-weight: 300;
+}
+
+.row {
+  display: flex;
+  flex-flow: row;
+}
+.d-flex {
+  display: flex;
+}
+
+.align-items-center {
+  align-items: center;
+}
+.tile-product-image {
+  max-width: 100px;
+  height: 100px;
+}
