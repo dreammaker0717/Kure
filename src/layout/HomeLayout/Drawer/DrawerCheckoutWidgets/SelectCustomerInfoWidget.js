@@ -9,7 +9,8 @@ import moment from 'moment';
 import {
   SIG_ADDRESS_LIST_CHANGED,
   SIG_CHANNEL,
-  SIG_CUSTOMER_REMOVED, SIG_CUSTOMER_SYNCED,
+  SIG_CUSTOMER_REMOVED,
+  SIG_CUSTOMER_SYNCED,
 } from 'Common/signals';
 import { UsersProfileContext } from 'services/context_services/usersProfileContext';
 import {
@@ -116,7 +117,7 @@ const SelectCustomerInfoWidget = (props) => {
     new_profile[new_customer.uid] = { ...new_customer };
     setProfileData(new_profile);
     // Update the UI - just in case there were changes.
-    setSelectedCustomer(new_customer);
+    await setSelectedCustomer(new_customer);
   }
 
   if (selectedCustomer == null) {
@@ -216,7 +217,7 @@ const SelectCustomerInfoWidget = (props) => {
           <Typography className="text-size-h6">
             <strong>Expiration date: </strong> {
               selectedCustomer.medical_user_info.expiration_date == "" ? ""
-                : moment(selectedCustomer.medical_user_info.expiration_date, "MM-DD-YYYY").format("MM-DD-YYYY")
+                : moment(selectedCustomer.medical_user_info.expiration_date, "YYYY-MM-DD").format("MM-DD-YYYY")
             }
           </Typography>
         </Box>

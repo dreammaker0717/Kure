@@ -123,11 +123,11 @@ const CustomerMgrModal = (props) => {
         response.error = true;
         response.message = 'Please enter a valid expiration date';
       }
-      // selectedCustomer.field_medical_license_documents should be an array of strings.
-      // else if (selectedCustomer.medical_user_info.field_medical_license_documents === undefined || selectedCustomer.medical_user_info.field_medical_license_documents.length === 0) {
-      //   response.error = true;
-      //   response.message = 'Please upload a valid license document';
-      // }
+      //selectedCustomer.field_medical_license_documents should be an array of strings.
+      else if (selectedCustomer.medical_user_info.field_medical_license_documents === undefined || selectedCustomer.medical_user_info.field_medical_license_documents.length === 0) {
+        response.error = true;
+        response.message = 'Please upload a valid license document';
+      }
     }
 
     console.log(selectedCustomer);

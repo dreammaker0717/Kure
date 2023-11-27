@@ -11,7 +11,7 @@ const ModalContent = ({ selectedCustomer, setSelectedCustomer, setSubmitIsDisabl
   const [warning, setWarning] = useState('');
   const [tokenworks, setTokenworks] = useState(null);
   const [confirmDialogOpen, setConfirmDialogOpen] = useState(false);
-  const [currentTokenWorksId, setCurrentTokenWorksId] = useState('');
+  const [currentTokenWorksId, setCurrentTokenWorksId] = useState('default');
   const [linkedCustomerName, setLinkedCustomerName] = useState('');
 
   useEffect(() => {
@@ -40,31 +40,25 @@ const ModalContent = ({ selectedCustomer, setSelectedCustomer, setSubmitIsDisabl
       console.log(err);
     });
 
-    const selected_tokenworks_customer_id = tokenworks && tokenworks.find(item => item.uid === selectedCustomer.uid)?.uid || '';
-    const temp = {
-      ...selectedCustomer,
-      tokenworks_customer_id: selected_tokenworks_customer_id
-    };
-    setSelectedCustomer(temp);
-    console.log(temp);
-    if (tokenworks) {
-      const temp = tokenworks.find(item => item.customer_id === selectedCustomer.uid)?.customer_id || '';
-      console.log("----000---------", temp);
-      setCurrentTokenWorksId(temp);
-    }
+
   }, []);
 
 
   useEffect(() => {
     if (tokenworks) {
       const temp = tokenworks.find(item => item.uid === selectedCustomer.uid)?.customer_id || '';
-      console.log("----000---------", temp);
+      const selected_customer = {
+        ...selectedCustomer,
+        tokenworks_customer_id: temp
+      };
+
       setCurrentTokenWorksId(temp);
+      setSelectedCustomer(selected_customer);
     }
   }, [tokenworks]);
 
   const onChangeTokenWorksId = (tokenworks_id) => {
-    if(tokenworks_id=='default') {
+    if (tokenworks_id == 'default') {
       tokenworks_id = '';
     }
     console.log("selectedCustomer==", tokenworks_id);
@@ -106,7 +100,7 @@ const ModalContent = ({ selectedCustomer, setSelectedCustomer, setSubmitIsDisabl
           setCurrentTokenWorksId(selectedCustomer.tokenworks_customer_id);
           setConfirmDialogOpen(false);
         }}
-        name={linkedCustomerName} 
+        name={linkedCustomerName}
       />
 
       <Box sx={{ height: '44px' }}>
@@ -130,7 +124,7 @@ const ModalContent = ({ selectedCustomer, setSelectedCustomer, setSubmitIsDisabl
             padding: '8px',
             width: '40%'
           }}
-          value={currentTokenWorksId?currentTokenWorksId:'default'}
+          value={currentTokenWorksId ? currentTokenWorksId : 'default'}
         >
           <option value="default">--- Select One ---</option>
           {tokenworks && tokenworks.map((info, index) => {

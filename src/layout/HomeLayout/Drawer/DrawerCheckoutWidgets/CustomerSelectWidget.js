@@ -82,9 +82,7 @@ const CustomerSelectWidget = (props) => {
           setCustomerList([]);
           break;
         case SIG_TOKENWORKS_SYNCED:
-          console.log("new_customer----", event.data);
           let new_customer = event.data.data;
-          console.log("new_customer----", new_customer);
           profileData[new_customer.uid] = { ...new_customer };
           await setProfileData(profileData);
           setSelectedCustomer(customerObject);
@@ -193,6 +191,8 @@ const CustomerSelectWidget = (props) => {
 
   const onClickTokenworksList = async (row) => {
     const customer = profileData[row.uid];
+    console.log("row == ", row);
+    console.log("customer == ", customer);
     await linkCustomer(customer);
   }
 

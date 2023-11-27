@@ -33,7 +33,6 @@ export const addUpdateCustomerData = async (selected_customer, only_address = fa
   // We flag the record as being updated. Technically, this customer record may not have changed but we'll mark
   // it as changed anyway.
   selected_customer.has_changed = true;
-  // console.log("update customer: ", selected_customer)
 
   const { medical_user_info } = selected_customer;
   const field_medical_license_documents = medical_user_info ? medical_user_info.field_medical_license_documents : []
@@ -60,10 +59,6 @@ export const addUpdateCustomerData = async (selected_customer, only_address = fa
 
   await linkAndUnlinkTokenWorksCustomer(new_tokenworks_customer, db);
 
-
-  broadcastMessage(SIG_STORE_DATA_FETCHED);
-  broadcastMessage(SIG_FINISH_REQUEST_USERS_PROFILE);
-  broadcastMessage(SIG_AUTH_CHANGED);
   console.log("sync_with_drupal====", sync_with_drupal);
   return sync_with_drupal;
 }
