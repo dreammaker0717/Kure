@@ -1,9 +1,10 @@
-import { SIG_AUTH_CHANGED, SIG_CHANNEL, SIG_ONE_CUSTOMER_RECEIVED, SIG_ORDER_LIST_CHANGED, SIG_RECEIVE_NOTIFICATION } from 'Common/signals';
+import { SIG_AUTH_CHANGED, SIG_CHANNEL, SIG_ONE_CUSTOMER_RECEIVED, SIG_ORDER_LIST_CHANGED, SIG_RECEIVE_NOTIFICATION, SIG_MESSAGE_MODAL_OPEN } from 'Common/signals';
 import React, { useContext, useEffect, useState } from 'react';
 import "react-toastify/dist/ReactToastify.css";
 import { clearAllData, } from 'services/idb_services/initiateData';
 import { Dialog } from '@mui/material';
 import CriticalRefreshPopup from 'components/CriticalRefreshPopup';
+import ShowMessageModal from 'components/ShowMessageModal/ConfirmModal';
 import { getLoggedInUserId } from 'services/storage_services/storage_functions';
 import { FCM_TYPE } from 'Common/constants';
 import { fetchOrderNotification } from 'services/idb_services/orderManager';
@@ -16,7 +17,10 @@ import { UsersProfileContext } from 'services/context_services/usersProfileConte
 const PushNotificationContainer = (props) => {
 
   const [showCritical, setShowCritical] = useState(false);
+  const [showMessageModal, setShowMessageModal] = useState(false);
+  const [messageContent, setMessageContent] = useState('');
   const { profileData, setProfileData } = useContext(UsersProfileContext);
+
   useEffect(() => {
     const channel = new BroadcastChannel(SIG_CHANNEL);
     channel.addEventListener('message', async (event) => {
@@ -50,17 +54,17 @@ const PushNotificationContainer = (props) => {
         case SIG_AUTH_CHANGED:
           getTokenworksData(true).then((res) => {
           });
+          break;
+        case SIG_MESSAGE_MODAL_OPEN:
+          setShowMessageModal(true);
+          setMessageContent(data);
+          break;
       }
     });
 
     // fetchOrderNotification().then((res) => {
-    //   const order_data = {
-    //     ...res['data'],
-    //     order_data: fakeOrders,
-    //     count: fakeOrders.length
-    //   }
-
-    //   broadcastMessage(SIG_ORDER_LIST_CHANGED, order_data);
+    //   console.log(res);
+    //   // broadcastMessage(SIG_ORDER_LIST_CHANGED, order_data);
     // })
   }, []);
 
@@ -79,6 +83,16 @@ const PushNotificationContainer = (props) => {
       >
         <CriticalRefreshPopup />
       </Dialog>
+      <ShowMessageModal
+        open={showMessageModal}
+        onOK={(v) => {
+          setShowMessageModal(false);
+        }}
+        onCancel={(v) => {
+          setShowMessageModal(false);
+        }}
+        content={messageContent}
+      />
     </>
   );
 };

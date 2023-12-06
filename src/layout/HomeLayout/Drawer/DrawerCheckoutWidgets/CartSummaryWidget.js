@@ -10,6 +10,8 @@ import {
 } from '@mui/material';
 import { convertToNumber, getCalculatedCartTotals, monetizeToLocal } from 'Common/functions';
 import { SIG_CHANNEL, SIG_CHECKOUT_PREPARE, } from 'Common/signals';
+import { USER_TYPE } from 'Common/constants';
+import { Resource } from 'services/api_services/Resource';
 
 const OneSummaryItem = (props) => {
   const { title, value, sx } = props;
@@ -36,7 +38,7 @@ const OneSummaryItem = (props) => {
 
 const CartSummaryWidget = (props) => {
   const { cart, cartTotals, cartReturnTotals } = props;
-
+  const resource = new Resource();
   const cashAmount = useMemo(() => {
     if (cart != null && cart.payment && cart.payment != "") {
       return convertToNumber(cart.payment);
@@ -48,6 +50,7 @@ const CartSummaryWidget = (props) => {
   if (cart == null) {
     return <></>
   }
+  const is_customer = resource.getUserRole() === USER_TYPE.CUSTOMER ? true : false;
 
   const total = convertToNumber(cartTotals.total, 0);
   const return_total = convertToNumber(cartReturnTotals.total, 0);
@@ -56,12 +59,16 @@ const CartSummaryWidget = (props) => {
   // console.log("cashAmount: ", cashAmount);
   // console.log("total: ", total);
   // console.log("overpaid_amount: ", overpaid_amount);
-  // console.log("cartReturnTotals: ", cartReturnTotals)
 
   return (
     <>
       {total > 0 && (
         <Box sx={{ pt: '18px' }}>
+          {is_customer && <OneSummaryItem
+            title={"Order Type: "}
+            value={cart.type ? cart.type.replace(/_/g, ' ').replace(/\b\w/g, char => char.toUpperCase()) : 'Delivery'}
+            sx={{ py: "5px" }}
+          />}
           <Box sx={{ fontWeight: "bold", fontSize: "18px" }}>Purchasing:</Box>
           <Box sx={{ pl: "10px" }}>
             <OneSummaryItem
@@ -117,6 +124,7 @@ const CartSummaryWidget = (props) => {
         </Box>
       )}
       <Box sx={{ mt: '16px' }}>
+
 
         <OneSummaryItem
           title={"Total"}

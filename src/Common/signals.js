@@ -13,6 +13,7 @@ export const SIG_CUSTOMER_CREATED = "SIG_CUSTOMER_CREATED";
 export const SIG_REFILL_CUSTOMER_DATA = "SIG_REFILL_CUSTOMER_DATA";
 export const SIG_CUSTOMER_SYNCED = "SIG_CUSTOMER_SYNCED";
 export const SIG_TOKENWORKS_SYNCED = "SIG_TOKENWORKS_SYNCED";
+export const SIG_MESSAGE_MODAL_OPEN = "SIG_MESSAGE_MODAL_OPEN";
 
 /**
  * This signal occurs when:When a user logs in.
@@ -44,13 +45,13 @@ export const SIG_CHECKOUT_COMPLETE = "SIG_CHECKOUT_COMPLETE";   // this is when 
 
 
 export const SIG_ORDER_SYNCHED = "SIG_ORDER_SYNCHED";
+export const SIG_ORDER_LIST_CHANGED = "SIG_ORDER_LIST_CHANGED";
 
 /**
  * @deprecated: We're now using the cart object's state. When finished we set the order state to 'completed'.
  * @type {string}
  */
 
-export const SIG_ORDER_LIST_CHANGED = "SIG_ORDER_LIST_CHANGED";
 
 
 // signals for config manager

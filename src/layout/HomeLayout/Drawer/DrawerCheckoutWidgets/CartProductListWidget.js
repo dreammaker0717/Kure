@@ -57,6 +57,7 @@ function CartProductListWidget(props) {
     border: '1px solid #fff',
     cursor: 'pointer'
   };
+
   const boxBorderDisabled = {
     height: '30px',
     border: '1px solid #8f8b8b3d',
@@ -72,10 +73,12 @@ function CartProductListWidget(props) {
     }
     return status;
   };
+
   const incrementDecrement = (order_item, direction) => {
     // const stock = parseInt( product.ProductInfo.stock);
     callAddCart(order_item.purchased_entity, direction);
   };
+
   const onClickDeleteProduct = (order_item) => {
     deleteVariationFromCart(order_item.purchased_entity);
   };
@@ -120,7 +123,7 @@ function CartProductListWidget(props) {
   }
 
   const onClickProduct = (order_item) => {
-    navigate(`/${order_item.purchased_entity.link}/${order_item.purchased_entity.variation_id}`)
+    navigate(`/${order_item.purchased_entity.link}/${order_item.purchased_entity?.variation_id}`)
   }
 
   return (
@@ -147,7 +150,7 @@ function CartProductListWidget(props) {
         ? <Box>
           {cart.order_items.map((order_item, index) => {
             // console.log("CCC: ", order_item)
-            const can_add_count = parseInt(order_item.purchased_entity.stock) - parseInt(order_item.quantity);
+            const can_add_count = parseInt(order_item.purchased_entity?.stock) - parseInt(order_item.quantity);
 
             const uiDelete = (<DeleteOutlineIcon
               sx={{
@@ -160,7 +163,7 @@ function CartProductListWidget(props) {
               onClick={() => onClickDeleteProduct(order_item)}
             />);
             const uiImage = (<Image
-              src={order_item.purchased_entity.product_image} alt="ProductImage"
+              src={order_item.purchased_entity?.product_image_thumbnail} alt="ProductImage"
               style={cssImgProduct}
               sx={{
                 width: {
@@ -192,7 +195,7 @@ function CartProductListWidget(props) {
                 }}
                   className='custom-button custom-button-underline'
                 >
-                  {order_item.purchased_entity.title}
+                  {order_item.purchased_entity?.title}
                 </span>
               </Typography>
             </Box>);
@@ -231,7 +234,7 @@ function CartProductListWidget(props) {
                   {
                     can_add_count < 0 && <Button
                       onClick={() => {
-                        console.log("canadd: ", can_add_count, "quantity: ", order_item.quantity, "stock: ", order_item.purchased_entity.stock)
+                        console.log("canadd: ", can_add_count, "quantity: ", order_item.quantity, "stock: ", order_item.purchased_entity?.stock)
                         incrementDecrement(order_item, can_add_count)
                       }}
                       variant="outlined"
@@ -242,7 +245,7 @@ function CartProductListWidget(props) {
                         border: '1px solid',
                       }}
                     >
-                      Set to {parseInt(order_item.purchased_entity.stock)}
+                      Set to {parseInt(order_item.purchased_entity?.stock)}
                     </Button>
                   }
                 </>
@@ -292,7 +295,7 @@ function CartProductListWidget(props) {
                 : <></>}
             </Box>);
             return (
-              <Box key={`order-item-${order_item.purchased_entity.variation_id}`}
+              <Box key={`order-item-${order_item.purchased_entity?.variation_id}`}
                 sx={{
                   p: "5px", paddingBottom: { xs: '15px', sm: '5px' },
                   border: (can_add_count < 0) ? "1px solid #E6854A" : null

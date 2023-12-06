@@ -308,7 +308,8 @@ class KureDatabase {
           await object_store.put(exist);
         } else {
           console.log('error', 'Item not found.');
-          return null;
+          await object_store.add(data);
+          // return null;
         }
       } else {
         //const current_date_time = new Date();

@@ -36,7 +36,7 @@ function ProductCard({ variation, index }) {
     <Card>
       <Box sx={{ height: { xs: '150px', sm: '184px', md: '184px', lg: '159px', xl: '200px' }, lineHeight: 0 }}>
         <Route to={`/${variation.link}`}>
-          <Image index={index} alt="" sx={{ height: '100%' }} src={variation.product_image} />
+          <Image index={index} alt="" sx={{ height: '100%' }} src={variation.product_image_thumbnail} />
         </Route>
       </Box>
       <CardContent sx={{

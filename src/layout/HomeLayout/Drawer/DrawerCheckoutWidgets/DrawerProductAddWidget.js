@@ -151,7 +151,7 @@ const DrawerProductAddWidget = (props) => {
                 ':hover': { bgcolor: '#32BEB9', borderRadius: '10px' }
               }}
             >
-              <Image alt="" src={data.product_image}
+              <Image alt="" src={data.product_image_thumbnail}
                 sx={{
                   width: { xs: "80px", sm: "100px" },
                   height: { xs: "80px", sm: "100px" },

@@ -59,7 +59,7 @@ const CheckoutWidget = (props) => {
     if (!cart) return false;
     if (!cart.order_items) return false;
     if (cart.order_items.length == 0) return false;
-    if (!cart.customer_id) return false;
+    if (!cart.customer_id) return true;
     if (cart.customer_id == "") return false;
 
     // I don't think this is necessary because the conditions above will catch it.
@@ -108,6 +108,18 @@ const CheckoutWidget = (props) => {
     });
   }, []);
 
+  useEffect(() => {
+    if (cart) {
+      if (cart.type == "pick_up") {
+        setMethod(CHECKOUT_TYPE.PICK_UP);
+      } else if (cart.type == "delivery") {
+        setMethod(CHECKOUT_TYPE.DELIVERY);
+      } else {
+        setMethod(null);
+      }
+    }
+  }, [cart]);
+
   // const [customerCount, setCustomerCount] = useState(0);
   const [progressFetch, setProgressFetch] = useState(100);
   const [progressParse, setProgressParse] = useState(0);
@@ -154,7 +166,7 @@ const CheckoutWidget = (props) => {
     ? true
     : (!cart
       ? false
-      : Math.round((convertToNumber(cart.payment, 0) - convertToNumber(cartTotals.total, 0) + convertToNumber(cartReturnTotals.total, 0))*100)/100 >= 0);
+      : Math.round((convertToNumber(cart.payment, 0) - convertToNumber(cartTotals.total, 0) + convertToNumber(cartReturnTotals.total, 0)) * 100) / 100 >= 0);
   // console.log("change: ", cartTotals)
   return (
     <>
@@ -195,6 +207,11 @@ const CheckoutWidget = (props) => {
                 <Button
                   key={'button-delivery'}
                   onClick={async () => {
+                    if (cart.customer_id == null && resource.getUserRole() === USER_TYPE.KURE_EMPLOYEE) {
+                      customToast.warn("Before proceeding, it's essential to select the customer.");
+                      return;
+                    }
+                    console.log("cart.customer_id == ", cart.customer_id);
                     await refreshCartHelper(CHECKOUT_TYPE.DELIVERY);
                     setMethod(CHECKOUT_TYPE.DELIVERY);
                   }}

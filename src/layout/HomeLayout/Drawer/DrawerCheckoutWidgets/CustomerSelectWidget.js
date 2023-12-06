@@ -191,8 +191,6 @@ const CustomerSelectWidget = (props) => {
 
   const onClickTokenworksList = async (row) => {
     const customer = profileData[row.uid];
-    console.log("row == ", row);
-    console.log("customer == ", customer);
     await linkCustomer(customer);
   }
 

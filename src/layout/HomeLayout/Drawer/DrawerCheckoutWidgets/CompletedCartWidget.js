@@ -34,7 +34,7 @@ const CompletedCartWidget = (props) => {
 
             <Box sx={{ mt: "20px" }}>
                 <Typography variant={'h2'} sx={{ fontSize: { xs: "16px", md: '20px' }, }}>
-                    The {cart.type.replace("_", " ").toUpperCase()} order #{cart.order_id} [{store_info.store_name} {store_address}] has been completed.
+                    The {cart.type.replace("_", " ")} order #{cart.order_id} [{store_info.store_name} {store_address}] has been completed.
                 </Typography>
             </Box>
 
@@ -46,7 +46,7 @@ const CompletedCartWidget = (props) => {
                 />
             </Box>
 
-            <Box sx={{ mb: "5px", mt: "20px", fontSize: "20px" }}>The Price summary</Box>
+            <Box sx={{ mb: "5px", mt: "20px", fontSize: "20px" }}>Purchase Summary:</Box>
             <Box sx={{ ml: "20px" }}>
                 <CartSummaryWidget
                     cart={cart}

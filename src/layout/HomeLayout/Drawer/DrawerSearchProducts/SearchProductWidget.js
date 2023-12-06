@@ -140,7 +140,7 @@ const SearchProductWidget = (props) => {
                                         ':hover': { bgcolor: '#32BEB9', borderRadius: '10px' }
                                     }}
                                 >
-                                    <Image alt="" src={data.product_image} height="100%" width="100%"
+                                    <Image alt="" src={data.product_image_thumbnail} height="100%" width="100%"
                                         sx={{ flex: 1, maxWidth: "100px" }}
                                         className="tile-product-image"
                                     />

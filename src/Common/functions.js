@@ -42,11 +42,22 @@ export const generateRandomInt = (min, max) => {
   return Math.floor(Math.random() * (max - min + 1)) + min;
 }
 export const convertTimestampToDate = (timestamp) => {
-  if (!timestamp || isNaN(parseInt(timestamp))) return '';
+  if (!timestamp || isNaN(parseInt(timestamp)) || parseInt(timestamp) <= 0) return '';
 
-  const _time = new Date(parseInt(timestamp));
+  let timestampNumber = parseInt(timestamp);
+
+  //php unix timestamp is counted in seconds and js timestamp is measured in milliseconds.
+  //JS timestamp = php timestamp * 1000;
+  // Check if the timestamp is in seconds or milliseconds (PHP or JS)
+  if (timestampNumber < 10000000000) {
+    // It's likely in seconds (PHP timestamp), convert it to milliseconds (JS timestamp)
+    timestampNumber *= 1000;
+  }
+  
+  const _time = new Date(parseInt(timestampNumber));
   return `${_time.toLocaleDateString()} ${_time.toLocaleTimeString()}`;
 }
+
 export const getUniqueArray = (arr) => {
   return [...new Set(arr)]
 }
@@ -203,9 +214,9 @@ export const convertToNumber = (string, errorValue = "") => {
 };
 export const monetizeToLocal = (value) => {
   const pre = convertToNumber(value, 0) >= 0 ? '' : '-';
-
-  return pre + '$' + Math.abs(value).toFixed(2);
+  return pre + '$' + Math.abs(parseFloat(value)).toFixed(2);
 };
+
 export const encode_utf8 = (s) => {
   return encodeURIComponent(s);
 };
@@ -291,23 +302,22 @@ export const getCalculatedCartTotals = (cart) => {
 
   // Place adjustments into our map. We want to sort them by weight. Make sure the adjustment is simplified in order to
   // display each one to the user.
-  cart.adjustments.forEach((adjustment) => {
-    adjustments.push({
-      weight: adjustment.weight,
-      data: {
-        label: adjustment.label,
-        value: adjustment.amount.number
-      }
-    });
-    subtotal_changes += parseFloat(adjustment.amount.number);
-  });
+
+  // cart.adjustments.forEach((adjustment) => {
+  //   adjustments.push({
+  //     weight: adjustment.weight,
+  //     data: {
+  //       label: adjustment.label,
+  //       value: adjustment.amount.number
+  //     }
+  //   });
+  //   subtotal_changes += parseFloat(adjustment.amount.number);
+  // });
 
   // Make sure the final sort order is by weight, ascending.
   adjustments = adjustments.sort((a, b) => a.weight - b.weight);
-
   // Make sure we merge adjustments that have the same label and we sum the value.
   adjustments = combineAdjustmentsByLabel(adjustments)
-
   // console.log(">> Adjustments", adjustments)
 
   // Simplify the adjustments array by only keeping the label and value.
@@ -342,15 +352,16 @@ export const getCalculatedCartReturnTotals = (cart) => {
   let subtotal = 0;
   let subtotal_changes = 0;
   let adjustments = [];
-
+  let return_flag = false;
   // We process order_items first because they contain the retail price.
   // Two things happen here: 1) Sum the subtotal for each order item, 2) Place adjustments into our map. We want to sort
   // them by weight. Make sure the adjustment is simplified in order to display each one to the user.
   cart.order_items.forEach((order_item) => {
-    if (order_item.type === OrderProductType.default) {
+    if (order_item.type !== OrderProductType.return) {
       return;
     }
 
+    return_flag = true;
     // Add the retail price to our subtotal.
     subtotal += parseFloat(order_item.retail_price) * order_item.quantity;
 
@@ -368,32 +379,34 @@ export const getCalculatedCartReturnTotals = (cart) => {
 
   // Place adjustments into our map. We want to sort them by weight. Make sure the adjustment is simplified in order to
   // display each one to the user.
-  cart.adjustments.forEach((adjustment) => {
-    adjustments.push({
-      weight: adjustment.weight,
-      data: {
-        label: adjustment.label,
-        value: adjustment.amount.number
+  if (return_flag) {
+    cart.adjustments.forEach((adjustment) => {
+      adjustments.push({
+        weight: adjustment.weight,
+        data: {
+          label: adjustment.label,
+          value: adjustment.amount.number
+        }
+      });
+      subtotal_changes += parseFloat(adjustment.amount.number);
+    });
+
+    // Make sure the final sort order is by weight, ascending.
+    adjustments = adjustments.sort((a, b) => a.weight - b.weight);
+
+    // Make sure we merge adjustments that have the same label and we sum the value.
+    adjustments = combineAdjustmentsByLabel(adjustments)
+
+    // console.log(">> Adjustments", adjustments)
+
+    // Simplify the adjustments array by only keeping the label and value.
+    adjustments = adjustments.map((adjustment) => {
+      return {
+        label: adjustment.data.label,
+        value: adjustment.data.value
       }
     });
-    subtotal_changes += parseFloat(adjustment.amount.number);
-  });
-
-  // Make sure the final sort order is by weight, ascending.
-  adjustments = adjustments.sort((a, b) => a.weight - b.weight);
-
-  // Make sure we merge adjustments that have the same label and we sum the value.
-  adjustments = combineAdjustmentsByLabel(adjustments)
-
-  // console.log(">> Adjustments", adjustments)
-
-  // Simplify the adjustments array by only keeping the label and value.
-  adjustments = adjustments.map((adjustment) => {
-    return {
-      label: adjustment.data.label,
-      value: adjustment.data.value
-    }
-  });
+  }
 
   // console.log("Subtotal", subtotal)
   // console.log("Adjustments: ", adjustments)

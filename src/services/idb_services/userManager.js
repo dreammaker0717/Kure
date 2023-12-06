@@ -256,7 +256,13 @@ export const fetchUsersProfileDataById = async (entity_id) => {
 }
 
 export const getTokenworksDataAll = async () => {
-  return await db.getSorted('add_date', 'prev', IDB_TABLES.tokenworks)
+  let tokenworks_list = await db.getSorted('add_date', 'prev', IDB_TABLES.tokenworks);
+
+  if (tokenworks_list.length > 15) {
+    tokenworks_list = tokenworks_list.slice(0, 15);
+  }
+  
+  return tokenworks_list;
 }
 
 export const getTokenworksData = async (force_fetch = false) => {

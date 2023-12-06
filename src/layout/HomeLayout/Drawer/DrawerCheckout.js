@@ -104,13 +104,14 @@ function DrawerCheckout() {
     // console.log("cart.order_id : ", cart.order_id);
     checkCartProductInventories(cart);
   }, [cart && cart.order_id]);
-  //
-  // const getUsrRole = async () => {
-  //   const role = await resource.getUserRole();
-  //   console.log(role);
-  //   setUserRole(role);
-  // };
-  //
+  
+  const getUsrRole = async () => {
+    const role = await resource.getUserRole();
+    // console.log(role);
+    // setUserRole(role);
+    return role;
+  };
+  
   // useEffect(() => {
   //   getUsrRole();
   // }, []);
@@ -118,7 +119,6 @@ function DrawerCheckout() {
   // console.log("submitTempData: ", submitTempData)
   // console.log("currentCart: ", cart)
   const getCartData = async () => {
-    console.log("getCartData")
     const toast_response = await refreshCart();
     const { status, data, message } = toast_response;
     if (status === false) {
@@ -283,6 +283,7 @@ function DrawerCheckout() {
       return;
     }
     console.log('invalid_products: ', invalid_products);
+
     if (invalid_products.length > 0) {
       customToast.error(`One or more products are out of stock. Please check product list again.`);
       // if (ref && ref.current) {
@@ -314,6 +315,10 @@ function DrawerCheckout() {
     // 3. Broadcast a message that the order submission completed, failed or is pending.
     // First we attempt to log a background sync API request in case the user is offline.
     const sync_order_result = await backgroundServiceMessenger('order-data-sync');
+    setCart({
+      ...cart,
+      is_busy: false
+    });
     console.log('sync_order_result: ', sync_order_result);
     // Our background sync API call failed.
     if (!sync_order_result) {
@@ -389,7 +394,7 @@ function DrawerCheckout() {
               Here is your shopping cart.
             </Typography>
             {resource.getUserRole() === USER_TYPE.KURE_EMPLOYEE && !processingUserProfileData && can_show_customers && (
-              <CashierNameWidget is_disabled={cart && cart.state == CART_STATUS.COMPLETED}/>
+              <CashierNameWidget is_disabled={cart && cart.state == CART_STATUS.COMPLETED} cart={cart} />
             )}
           </Stack>
 
@@ -403,21 +408,21 @@ function DrawerCheckout() {
           ) : (
             <>
               {cart && cart.state == CART_STATUS.COMPLETED ? (
-                <CompletedCartWidget cart={cart} cartTotals={cartTotals} cartReturnTotals={cartReturnTotals}/>
+                <CompletedCartWidget cart={cart} cartTotals={cartTotals} cartReturnTotals={cartReturnTotals} />
               ) : (
                 <>
                   {(!cart || cart.order_items.length == 0) && sel_store_info && (
                     <>
                       <Box sx={{ ml: '10px', mb: '40px', textAlign: 'center' }}>
                         <Typography variant="h5">
-                          <ReportProblemIcon sx={{ color: '#E67D04', mr: '10px' }} fontSize={'small'}/>
+                          <ReportProblemIcon sx={{ color: '#E67D04', mr: '10px' }} fontSize={'small'} />
                           It seems there's no product in your cart for current store
-                          <br/>
+                          <br />
                           {sel_store_info.name} [{getAddressString(sel_store_info)}]
-                          <br/>
+                          <br />
                           Please add products to your cart or &nbsp;
                           <Typography onClick={onClickChangeStore}
-                                      sx={{ textDecoration: 'underline', cursor: 'pointer' }} display="inline">
+                            sx={{ textDecoration: 'underline', cursor: 'pointer' }} display="inline">
                             change the store here
                           </Typography>
                           .
@@ -427,21 +432,21 @@ function DrawerCheckout() {
                   )}
                   {cart && cart.is_busy && (
                     <Box>
-                      <CartDrupalSyncWidget cart={cart}/>
+                      <CartDrupalSyncWidget cart={cart} />
                     </Box>
                   )}
 
                   {resource.getUserRole() === USER_TYPE.KURE_EMPLOYEE ? (
                     <>
-                      <CartButtonsWidget paneIsOpen={open}/>
-                      {cart && !cart.is_busy && <CartProductListWidget cart={cart} setCart={setCart}/>}
+                      <CartButtonsWidget paneIsOpen={open} />
+                      {cart && !cart.is_busy && <CartProductListWidget cart={cart} setCart={setCart} />}
                     </>
                   ) : (
                     cart &&
                     !cart.is_busy && (
                       <>
-                        <CartButtonsWidget paneIsOpen={open}/>
-                        <CartProductListWidget cart={cart} setCart={setCart}/>
+                        <CartButtonsWidget paneIsOpen={open} />
+                        <CartProductListWidget cart={cart} setCart={setCart} />
                       </>
                     )
                   )}
@@ -458,7 +463,7 @@ function DrawerCheckout() {
                       }}
                     >
                       <Box sx={{ paddingBottom: '0px', display: !method ? 'block' : 'none' }}>
-                        <CustomerSelectWidget/>
+                        <CustomerSelectWidget />
                       </Box>
                     </div>
                   )}
@@ -466,7 +471,7 @@ function DrawerCheckout() {
                   {can_show_drawer_info && can_show_customers && (
                     <Box sx={{ pt: '10px' }}>
                       {!cart.is_busy && resource.getUserRole() === USER_TYPE.KURE_EMPLOYEE && !processingUserProfileData && (
-                        <SelectCustomerInfoWidget cart={cart} method={method}/>
+                        <SelectCustomerInfoWidget cart={cart} method={method} />
                       )}
                     </Box>
                   )}
@@ -489,7 +494,7 @@ function DrawerCheckout() {
                       )}
                     </>
                   ) : (
-                    <DrawerAuth/>
+                    <DrawerAuth />
                   )}
                 </>
               )}
@@ -497,7 +502,7 @@ function DrawerCheckout() {
               {cart && cart.order_items.length > 0 && (
                 <>
                   <Typography>
-                    <CancelOutlinedIcon color={'error'} fontSize={'small'}/>
+                    <CancelOutlinedIcon color={'error'} fontSize={'small'} />
                     *WARNING: Products sold here can expose you to chemicals including Δ9-Tetrahydrocannabinol (Δ9 -
                     THC), which are known
                     to the State of California to cause birth defects or other reproductive harm. For more information

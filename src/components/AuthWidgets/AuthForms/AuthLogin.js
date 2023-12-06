@@ -22,11 +22,12 @@ import {
   SIG_AUTH_CHANGED,
   SIG_REQUEST_ADJUSTMENT_DATA,
   SIG_REQUEST_COUPON_DATA,
-  SIG_REQUEST_USERS_PROFILE
+  SIG_REQUEST_USERS_PROFILE,
+  SIG_ORDER_LIST_CHANGED
 } from 'Common/signals';
 import { clearAuthInfo, } from 'services/storage_services/storage_functions';
 import { idbSetLoggedInUser } from 'services/idb_services/configManager';
-import { eventUserLoggedIn } from "services/idb_services/orderManager";
+import { eventUserLoggedIn, fetchOrderNotification } from "services/idb_services/orderManager";
 import { idbCustomerLoggedIn } from 'services/idb_services/userManager';
 import { USER_TYPE } from 'Common/constants';
 
@@ -62,6 +63,7 @@ const AuthLogin = () => {
             resource.oAuthTokenSave(response.data).then((res) => {
               console.log('2. oAuthTokenSave');
               setStatus({ success: true });
+
               resource.userGetProfileData().then(async (user_data) => {
                 console.log('3. userGetProfileData', user_data);
                 // We'll use this later on to determine if we should close their session when the browser is closed.
@@ -86,7 +88,7 @@ const AuthLogin = () => {
                 });
 
                 await eventUserLoggedIn(user_data.data);
-
+            
                 broadcastMessage(SIG_REQUEST_USERS_PROFILE);
                 broadcastMessage(SIG_REQUEST_COUPON_DATA);
                 broadcastMessage(SIG_AUTH_CHANGED)
@@ -100,10 +102,10 @@ const AuthLogin = () => {
                   navigate('/');
                 }
               })
-              .catch((error) => {
-                setIsBusy(false);
-                console.log(error);
-              });
+                .catch((error) => {
+                  setIsBusy(false);
+                  console.log(error);
+                });
             });
           }).catch((error) => {
             setIsBusy(false)
@@ -253,7 +255,7 @@ const AuthLogin = () => {
                     color='info'
                     sx={{ background: '#32beb9' }}
                   >
-                    {isBusy && <CircularProgress sx={{ color: 'white', marginRight: "10px" }} size={'15px'}/>} Login
+                    {isBusy && <CircularProgress sx={{ color: 'white', marginRight: "10px" }} size={'15px'} />} Login
                   </Button>
                 </AnimateButton>
               </Grid>

@@ -14,9 +14,9 @@ const Alert = React.forwardRef(function Alert(props, ref) {
   return <MuiAlert elevation={6} ref={ref} variant="filled" {...props} />;
 });
 const SelectDeliveryAdrWidget = (props) => {
-  const { cartInfo, onClickNext, deliveryStatus, setDeliveryStatus } = props;
+  const { cartInfo, onClickNext, deliveryStatus, setDeliveryStatus, addressList } = props;
+  console.log("cartInfo == ", cartInfo);
   // const { addressList, deliveryInfo, setDeliveryInfo  } = props;
-  const { addressList } = props;
   const [alertInfo, setAlertInfo] = useState({ message: '', open: false });
   // console.log("addressList: ", addressList);
   // const [selAddressUID, setSelAddressUID] = useState();
@@ -25,12 +25,23 @@ const SelectDeliveryAdrWidget = (props) => {
     if (!billing_info || Object.keys(billing_info).length == 0) {
       return null;
     }
+    if(addressList.length == 0) {
+      addressList = billing_info;
+    }
+
     const address_uid = Object.keys(billing_info)[0];
-    return Object.entries(addressList).find(([key, value]) => key == address_uid);
+    let temp_address = Object.entries(addressList).find(([key, value]) => key == address_uid);
+    
+    if(!temp_address) {
+      temp_address = Object.entries(addressList)[0];
+    }
+    return temp_address;
   }, [cartInfo]);
+
   const is_completed = cartInfo.state == CART_STATUS.COMPLETED
   const error_message = useMemo(() => {
-    if (selected_address == undefined) return "Please add one of your address.";
+    if (selected_address == undefined) return "Please add at least one address.";
+
     let message = "";
     const profile_id = selected_address[0];
     const address_body = selected_address[1];
@@ -142,7 +153,7 @@ const SelectDeliveryAdrWidget = (props) => {
               {Object.entries(addressList).map(([key, value]) => {
                 return (
                   <option value={key} key={`deliver-address-${key}`}
-                          style={{ color: value.phone == '' ? '#fa7274' : '' }}>
+                    style={{ color: value.phone == '' ? '#fa7274' : '' }}>
                     {value.address.address_line1} {value.address.address_line2} {value.address.locality}, {value.address.administrative_area} {value.address.postal_code}: {value.phone == '' ? ' (Phone # is required)' : value.phone}
                   </option>
                 );

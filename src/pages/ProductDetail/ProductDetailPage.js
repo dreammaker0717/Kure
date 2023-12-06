@@ -255,7 +255,7 @@ const ProductDetailPage = () => {
         <Grid item xs={12} sm={6} sx={{ '&.MuiGrid-item': { p: '0 1rem' } }}>
           <Box width="100%" height="100%">
             {/* {variation?.product_image && !loading && ( */}
-            <Image src={variation?.product_image} alt="" sx={{ height: '100%' }}/>
+            <Image src={variation?.product_image_large} alt="" sx={{ height: '100%' }}/>
             {/* )} */}
             {/* {!variation?.product_image && loading && <Skeleton variant="rectangular" height="100%" width="100%" sx={{ bgcolor: '#fff' }} />} */}
           </Box>

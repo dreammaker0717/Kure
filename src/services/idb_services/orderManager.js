@@ -18,7 +18,8 @@ import {
 } from 'Common/functions';
 import {
   SIG_ON_REFRESH_CART,
-  SIG_ORDER_SYNCHED
+  SIG_ORDER_SYNCHED,
+  SIG_ORDER_LIST_CHANGED
 } from 'Common/signals';
 import { getStoreId, getLoggedInUserId, storeGetCashierId } from 'services/storage_services/storage_functions';
 import { IDB_TABLES, KureDatabase } from 'services/idb_services/KureDatabase';
@@ -73,9 +74,9 @@ export const eventUserSwitchedStores = async () => {
   // console.log("eventUserSwitchedStores: active_cart_id: ", active_cart_id);
 
   // Need the active_cart_id or else there's nothing to do.
-  if (active_cart_id == null || active_cart_id == undefined) {
-    return;
-  }
+  // if (active_cart_id == null || active_cart_id == undefined) {
+  //   return;
+  // }
   // We're only interested in performing logic for a logged-in user.
   if (user_role == null || user_role == undefined) {
     return;
@@ -94,7 +95,10 @@ export const eventUserSwitchedStores = async () => {
       break;
 
     case USER_TYPE.KURE_EMPLOYEE:
+      await fetchOrderNotification();
+      broadcastMessage(SIG_ORDER_LIST_CHANGED, null);
       conditions.cashier_id = getLoggedInUserId();
+      console.log(USER_TYPE.KURE_EMPLOYEE);
       break;
   }
 
@@ -144,6 +148,8 @@ export const eventUserLoggedIn = async () => {
     // employees. Why? Imagine what will happen if the employee was editing or working with a customer's order. We wouldn't
     // want to merge their anonymous cart with the customer's cart.
     case USER_TYPE.KURE_EMPLOYEE:
+      await fetchOrderNotification();
+      broadcastMessage(SIG_ORDER_LIST_CHANGED, null);
       const user_info = await idbGetLoggedInUser();
       const active_cart_id = await idbGetActiveCartId();
       if (active_cart_id == null || active_cart_id == undefined) {
@@ -293,7 +299,7 @@ export const checkCartProductInventories = async (cart = null, use_existing_prod
   }
 
   // get orders inventories
-  const variations = cart.order_items.map(x => x.purchased_entity.variation_id);
+  const variations = cart.order_items.map(x => x.purchased_entity?.variation_id);
   let new_products = cart.order_items.map(x => x.purchased_entity);
   // if (!use_existing_products) {
   //   const drupal_data = await fetchProductDataByVariationIds(variations);
@@ -309,16 +315,19 @@ export const checkCartProductInventories = async (cart = null, use_existing_prod
   let invalid_products = [];
 
   for (let i = 0; i < cart.order_items.length; i++) {
-    const new_product = new_products.find(x => x.variation_id == cart.order_items[i].purchased_entity.variation_id);
-    // new_product.stock = 1;
+    const new_product = new_products.find(x => x?.variation_id == cart.order_items[i].purchased_entity?.variation_id);
+    // new_product?.stock = 1;
     if (!new_product) {
-      invalid_products.push(cart.order_items[i].purchased_entity.variation_id);
-      cart.order_items[i].purchased_entity.stock = 0;
+      invalid_products.push(cart.order_items[i].purchased_entity?.variation_id);
+      if(cart.order_items[i].purchased_entity) {
+        cart.order_items[i].purchased_entity.stock = 0;
+      }
       continue;
     }
+
     cart.order_items[i].purchased_entity = new_product;
-    if (new_product.stock < cart.order_items[i].quantity) {
-      invalid_products.push(cart.order_items[i].purchased_entity.variation_id);
+    if (new_product?.stock < cart.order_items[i].quantity) {
+      invalid_products.push(cart.order_items[i].purchased_entity?.variation_id);
     }
   }
   await db.put([cart], IDB_TABLES.commerce_order);
@@ -329,7 +338,7 @@ export const checkCartProductInventories = async (cart = null, use_existing_prod
 export const setOrderProductAsReturn = async (variation, is_return) => {
   const cart = (await getCart()).data;
   // Does an order_item exist that contains the same variation_id?
-  const order_item = cart.order_items.find(x => x.purchased_entity.variation_id === variation.variation_id);
+  const order_item = cart.order_items.find(x => x.purchased_entity?.variation_id === variation?.variation_id);
   // Update the quantity of the order_item.
   // console.log("OO", order_item)
   if (!order_item) return;
@@ -362,7 +371,7 @@ export const addRemoveProductFromCart = async (variation, quantity = 1, package_
   console.log("add");
   let new_variation = variation;
   // if (quantity > 0) {
-  //   new_variation = await fetchProductDataById(variation.variation_id);
+  //   new_variation = await fetchProductDataById(variation?.variation_id);
   //   console.log("new_variation: ", new_variation)
   //   if (!new_variation) {
   //     new_variation = variation;
@@ -374,17 +383,17 @@ export const addRemoveProductFromCart = async (variation, quantity = 1, package_
   // cart.order_items.forEach(x => x.adjustments = []);
   // cart.adjustments = [];
 
-  // console.log("product_info, ", product_info, variation.variation_id);
+  // console.log("product_info, ", product_info, variation?.variation_id);
   // We must first update the order_item property or the adjustments below can't properly calculate values.
   // User is adding a product to the cart.
   if (quantity > 0) {
     addUpdateOrderItemToCart(cart, new_variation, quantity, package_uid);
     // Now that our the order_item quantity updated, check stock, don't allow to add more than stock.
-    const order_item = cart.order_items.find(x => x.purchased_entity.variation_id === new_variation.variation_id);
-    console.log("variation.stock:", new_variation.stock)
+    const order_item = cart.order_items.find(x => x.purchased_entity?.variation_id === new_variation?.variation_id);
+    console.log("variation?.stock:", new_variation?.stock)
     console.log("order quantity:", order_item.quantity)
-    if (parseInt(order_item.quantity) > parseInt(new_variation.stock)) {
-      return toastPrepareMessage(false, null, 'We only have ' + new_variation.stock + ' products in stock.');
+    if (parseInt(order_item.quantity) > parseInt(new_variation?.stock)) {
+      return toastPrepareMessage(false, null, 'We only have ' + new_variation?.stock + ' products in stock.');
     }
   } else {
     message = 'Product removed from cart.';
@@ -594,8 +603,6 @@ function processAdjustmentPromotionHelper(promotion, offer_configuration, order_
 }
 
 async function processAdjustmentTax(tax, cart, variation, user_profile) {
-  // console.log('<< Tax:', tax);
-
   const order_item = cart.order_items.find(x => x.purchased_entity?.variation_id === variation?.variation_id);
   // This may happen if the user removes the item from the cart.
   if (order_item === undefined) {
@@ -650,45 +657,52 @@ async function processAdjustmentTax(tax, cart, variation, user_profile) {
     const enable_rounding_adjustment = config.enable_rounding_adjustment;
     const round = config.round;
     const rates = config.rates;
-    for (let j = 0; j < rates.length; j++) {
-      const rate = rates[j];
-      const { id, label, percentage } = rate;
 
-      // console.log(percentage, item_subtotal)
+    let config_is_cannabis = parseInt(config?.is_cannabis || false);
+    let variation_is_cannabis = parseInt(variation?.is_cannabis || false);
 
-      const source_id = tax.id + '|default|' + id;
-      // Does source_id already exist in the order_item.adjustments array?
-      const existing_adjustment = order_item.adjustments.find(x => x.source_id === source_id);
-      // We want to update the amount and percentage.
-      if (existing_adjustment) {
-        // console.log('Existing adjustment:', existing_adjustment);
-        existing_adjustment.amount.number = percentage * item_subtotal;
-        existing_adjustment.percentage = percentage;
+    if ((config_is_cannabis && variation_is_cannabis) || (!config_is_cannabis)) {
+
+      for (let j = 0; j < rates.length; j++) {
+        const rate = rates[j];
+        const { id, label, percentage } = rate;
+
+        // console.log(percentage, item_subtotal)
+
+        const source_id = tax.id + '|default|' + id;
+        // Does source_id already exist in the order_item.adjustments array?
+        const existing_adjustment = order_item.adjustments.find(x => x.source_id === source_id);
+
+        // We want to update the amount and percentage.
+        if (existing_adjustment) {
+          // console.log('Existing adjustment:', existing_adjustment);
+          existing_adjustment.amount.number = percentage * item_subtotal;
+          existing_adjustment.percentage = percentage;
+        }
+        // Doesn't exist, add it.
+        else {
+          order_item.adjustments.push({
+            type: ADJUSTMENT_TYPE.TAX,
+            label: label,
+            amount: {
+              // number: percentage * ((order_item.quantity * convertToNumber(order_item.retail_price)) + promotion_adjustments_total),
+              number: percentage * item_subtotal,
+              currency_code: 'USD',
+            },
+            percentage: percentage,
+            // local_tax|default|e97ac695-0e8e-41d4-84bf-4785f8709dda
+            source_id: tax.id + '|default|' + id,
+            /**
+             * @TODO: The two values below, I'm not sure what to do with them.
+             */
+            included: false,
+            locked: false,
+            weight: tax.configuration.tax_weight,
+          });
+        }
       }
-      // Doesn't exist, add it.
-      else {
-        order_item.adjustments.push({
-          type: ADJUSTMENT_TYPE.TAX,
-          label: label,
-          amount: {
-            // number: percentage * ((order_item.quantity * convertToNumber(order_item.retail_price)) + promotion_adjustments_total),
-            number: percentage * item_subtotal,
-            currency_code: 'USD',
-          },
-          percentage: percentage,
-          // local_tax|default|e97ac695-0e8e-41d4-84bf-4785f8709dda
-          source_id: tax.id + '|default|' + id,
-          /**
-           * @TODO: The two values below, I'm not sure what to do with them.
-           */
-          included: false,
-          locked: false,
-          weight: tax.configuration.tax_weight,
-        });
-      }
-      // console.log('Tax adjustment added:', order_item.adjustments[order_item.adjustments.length - 1]);
-      // console.log(cart);
     }
+
   }
 }
 
@@ -729,8 +743,6 @@ async function processAdjustmentShipping(shipment_conditions, cart) {
         weight: rule.configuration.shipping_weight,
       });
     }
-
-    console.log('cart.adjustments', cart.adjustments)
 
     cart.shipping_id = rule.shipping_method_id;
   }
@@ -886,14 +898,14 @@ export const getValidQuantityOfProduct = async (variation_id) => {
   if (data.length == 0) return 0;
 
   const product = data[0];
-  const quantity = product.stock;
+  const quantity = product?.stock;
   // console.log("product>>", product)
   // check orders
   const order_list = await db.getAll(IDB_TABLES.commerce_order);
   let ordered_count = 0;
   for (let i = 0; i < order_list.length; i++) {
     const order_items = Object.entries(order_list[i]['order_items']).map(x => x[1]);
-    const focusing_products = order_items.filter(x => x.purchased_entity.variation_id == product.variation_id);
+    const focusing_products = order_items.filter(x => x.purchased_entity?.variation_id == product?.variation_id);
     for (let j = 0; j < focusing_products.length; j++) {
       ordered_count += focusing_products[j].quantity;
     }
@@ -903,7 +915,7 @@ export const getValidQuantityOfProduct = async (variation_id) => {
 
 function addUpdateOrderItemToCart(cart, variation, quantity, package_uid = null) {
   // Does an order_item exist that contains the same variation_id?
-  const order_item = cart.order_items.find(x => x.purchased_entity.variation_id === variation.variation_id);
+  const order_item = cart.order_items.find(x => x.purchased_entity?.variation_id === variation?.variation_id);
   // Update the quantity of the order_item.
   if (order_item != undefined) {
     order_item.quantity += quantity;
@@ -934,7 +946,7 @@ function addUpdateOrderItemToCart(cart, variation, quantity, package_uid = null)
 
 function removeOrderItemFromCart(cart, variation, package_uid = null, remove_quantity = -1) {
   // Does an order_item exist that contains the same variation_id?
-  const order_item = cart.order_items.find(x => x.purchased_entity.variation_id === variation.variation_id);
+  const order_item = cart.order_items.find(x => x.purchased_entity?.variation_id === variation?.variation_id);
 
   // Update the quantity of the order_item.
   if (order_item != undefined) {
@@ -1022,7 +1034,7 @@ function filterShippingRules(data, store_id, order_type, order_total, shipment_a
        *     }
        * }
        */
-        // Get the first key in the shipment_address object.
+      // Get the first key in the shipment_address object.
       const shipment_address_key = Object.keys(shipment_address)[0];
       // console.log("country_code", shipment_address[shipment_address_key].address.country_code);
       // console.log("administrative_area", shipment_address[shipment_address_key].address.administrative_area);
@@ -1214,7 +1226,7 @@ export const deleteVariationFromCart = async (variation, store_id = getStoreId()
  * @param variation
  */
 function deleteOrderItemFromCart(cart, variation) {
-  cart.order_items = cart.order_items.filter(x => x.purchased_entity.variation_id !== variation.variation_id);
+  cart.order_items = cart.order_items.filter(x => x.purchased_entity?.variation_id !== variation?.variation_id);
 }
 
 export const getProductFromPackageUID = async (package_uid, store_id = getStoreId()) => {
@@ -1250,7 +1262,7 @@ export const getProductCountFromCart = (cart) => {
   if (cart.order_items !== undefined) {
     for (let i = 0; i < cart.order_items.length; i++) {
       const order_item = cart.order_items[i];
-      count += order_item.quantity;
+      count += parseInt(order_item.quantity);
     }
   }
   return count;
@@ -1335,10 +1347,26 @@ export const syncOrderWithDrupal = async (order) => {
 
 export const postOrderMessage = (data) => {
   broadcastMessage(SIG_ON_REFRESH_CART, data);
+
 };
 
 export const fetchOrderNotification = async () => {
-  return await resource.getOrders({ store_id: getStoreId() });
+  console.log("fetchOrderNotification");
+  const toast_response = await resource.getOrders({ store_id: getStoreId() });
+  const { data } = toast_response;
+  if (data == undefined) {
+    return;
+  }
+
+  let orders = JSON.parse(data).order_data;
+  for (let i = 0; i < orders.length; i++) {
+    orders[i] = await orderParsing(orders[i]);
+  }
+
+  const kure_db = new KureDatabase();
+  const res = await kure_db.put(orders, IDB_TABLES.commerce_order);
+  console.log("---", res);
+  return res;
 }
 
 export const fetchOrder = async (order_id = null) => {
@@ -1348,28 +1376,34 @@ export const fetchOrder = async (order_id = null) => {
   if (data == undefined) {
     return;
   }
-
   const orders = JSON.parse(data).order_data;
-  // orders[0]['submission_ready'] = true;
-  for (let i = 0; i < orders[0].order_items.length; i++) {
-    const purchased_entity = await getProductByVariationId(orders[0].order_items[i].variation_id);
+  if (orders.length > 0) {
+    orders[0] = await orderParsing(orders[0]);
+  }
+  
+  console.log('fetchOrder orders:', orders[0]);
+  const kure_db = new KureDatabase();
+  const res = await kure_db.updateOrAdd(orders[0], IDB_TABLES.commerce_order);
+  broadcastMessage(SIG_ORDER_LIST_CHANGED, null);
+  return res;
+}
 
-    orders[0].order_items[i] = {
-      ...orders[0].order_items[i],
+export const orderParsing = async (order) => {
+  for (let i = 0; i < order.order_items.length; i++) {
+    const purchased_entity = await getProductByVariationId(order.order_items[i]?.variation_id);
+
+    order.order_items[i] = {
+      ...order.order_items[i],
       purchased_entity: purchased_entity,
-      quantity: parseFloat(orders[0].order_items[i].quantity),
-      unit_price: parseFloat(orders[0].order_items[i].unit_price),
-      total_price: parseFloat(orders[0].order_items[i].total_price),
-      retail_price: parseFloat(orders[0].order_items[i].unit_price),
+      quantity: parseFloat(order.order_items[i].quantity),
+      unit_price: parseFloat(order.order_items[i].unit_price),
+      total_price: parseFloat(order.order_items[i].total_price),
+      retail_price: parseFloat(order.order_items[i].unit_price),
       package_uids: []
     }
   }
-  console.log('fetchOrder orders:', orders);
-  const kure_db = new KureDatabase();
-  // const res = await kure_db.put(orders, IDB_TABLES.cart_session);
-  const res = await kure_db.put(orders, IDB_TABLES.commerce_order);
-  // I think cart_session is not required, because it gives confusion when we manage it in same drawer
-  // console.log("store res: ", res);
+
+  return order;
 }
 
 /**
@@ -1459,7 +1493,7 @@ const mergeCart = async () => {
     for (let i = 0; i < cart_anonymous.order_items.length; i++) {
       const order_item = cart_anonymous.order_items[i];
       // Check if the order_item exists in the authenticated user's cart.
-      const index = cart_authenticated_user.order_items.findIndex((item) => item.purchased_entity.variation_id === order_item.purchased_entity.variation_id);
+      const index = cart_authenticated_user.order_items.findIndex((item) => item.purchased_entity?.variation_id === order_item.purchased_entity?.variation_id);
       if (index === -1) {
         // If it doesn't exist, add it to the authenticated user's cart.
         cart_authenticated_user.order_items.push(order_item);
@@ -1493,7 +1527,7 @@ if ('serviceWorker' in navigator) {
       case 'commerce_order':
         console.log('orderManager.js, fetch commerce_order data ' + entity_id);
         await fetchOrder(entity_id);
-        broadcastMessage(SIG_ORDER_SYNCHED)
+        broadcastMessage(SIG_ORDER_LIST_CHANGED);
         break;
     }
   });

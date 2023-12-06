@@ -109,7 +109,7 @@ const OrderContent = (props) => {
     await idbAddOrderIdHistory(order.order_id);
   }
 
-  const ordersFilteredByStatus = (status) => orders.filter(x => x.state === status);
+  const ordersFilteredByStatus = (status) => orders.filter(x => x.state === status).sort(({ changed: a }, { changed: b }) => parseInt(b) - parseInt(a));
 
   return (
     <Box>

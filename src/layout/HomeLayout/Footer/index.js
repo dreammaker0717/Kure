@@ -18,78 +18,15 @@ import { USER_TYPE } from '../../../Common/constants';
 import { useEffect } from 'react';
 import { ROUTE } from 'routes/CONSTANTS';
 import { CommonDataIndex, useCommonData } from 'services/context_services/commonDataContext';
-import NotificationsActiveIcon from '@mui/icons-material/NotificationsActive';
-import { makeStyles } from '@mui/styles';
 import StoreSelectModal from '../../../components/SetNotificationModal/SetNotificationModal';
-
-const NotificationGroup = {
-  display: "flex",
-  justifyContent: "center",
-  alignItems: "center",
-  flexDirection: "row-reverse",
-  position: "fixed",
-  right: "20px",
-  bottom: "65px",
-  cursor: "pointer"
-};
-
-const NotificationBtnStyle = {
-  color: '#32BEB9',
-  padding: '10px',
-  width: '60px',
-  height: '60px',
-  fontSize: 15,
-  background: "black",
-  borderRadius: "0px 10px 10px 0px"
-};
-
-const NotificationTextStyle = {
-  color: 'white',
-  fontSize: 15,
-  background: "black",
-  maxHeight: "60px",
-  fontFamily: "bold",
-  padding: "20px 0px 20px 10px",
-  borderRadius: "10px 0px 0px 10px",
-  cursor: "pointer"
-};
-
-const NotificationTextStyle2 = {
-  position: "fixed",
-  right: "87px",
-  bottom: "58px",
-  color: 'white',
-  fontSize: 15,
-  fontFamily: "bold",
-  background: "black",
-  padding: "18px 10px",
-  borderRadius: "10px 0px 0px 10px",
-  cursor: "pointer"
-}
-
-const useStyles = makeStyles({
-  animatedButton: {
-    animation: '$moveDown 0.5s infinite alternate', // Animation properties
-  },
-  '@keyframes moveDown': {
-    '0%': {
-      transform: 'translateY(0)', // Initial position
-    },
-    '100%': {
-      transform: 'translateY(10px)', // Translated 10px down
-    },
-  },
-});
 
 const db = new KureDatabase();
 
 function Footer() {
   const { values: commonData } = useCommonData();
+  const resource = new Resource();
   const selStoreId = commonData[CommonDataIndex.SEL_STORE];
   const [openNotificationModal, setOpenNotificationModal] = useState(false);
-  const [notificationPermission, setNotificationPermission] = useState(false);
-  const classes = useStyles();
-  const isLogin = localStorage.getItem('kure-user-info');
   const [footerContents, setFooterContents] = useState([
     {
       title: 'Contact us',
@@ -202,47 +139,8 @@ function Footer() {
     });
   };
 
-  useEffect(() => {
-    async function getPermission() {
-      const notificaionPermission = await getNotificationPermission();
-      console.log("notificaionPermission", notificaionPermission);
-
-      if (notificaionPermission) {
-        setNotificationPermission(false);
-        console.log("truetruetruetrue");
-      } else {
-        setNotificationPermission(true);
-        console.log("falsefalsefalsefalsefalse");
-        const isShowModal = localStorage.getItem('isNotificationNodalShow');
-        if (isShowModal == null) {
-          localStorage.setItem('isNotificationNodalShow', "true");
-          setOpenNotificationModal(true);
-        }
-      }
-    }
-
-    getPermission();
-  }, []);
-
-  const onClickChangeNotification = () => {
-    setOpenNotificationModal(true);
-  };
-
-  const setOpenNotification = () => {
-    setOpenNotificationModal(false);
-  }
-
   return (
     <Box sx={{ p: 2 }}>
-      <StoreSelectModal
-        open={openNotificationModal}
-        onOK={(v) => {
-          setOpenNotification();
-        }}
-        onCancel={(v) => {
-          setOpenNotificationModal(false);
-        }}
-      />
       <Box sx={{ display: 'flex', justifyContent: 'space-between', flexWrap: 'wrap' }}>
         <Box sx={{ width: { xs: '100%', sm: '40%', lg: 'auto' } }}>
           <Box m={'10px'}>
@@ -262,12 +160,6 @@ function Footer() {
           <ContentFooter content={content} key={index} />
         ))}
       </Box>
-      {notificationPermission ? (isLogin == null ?
-        <div style={NotificationGroup} className={classes.animatedButton}>
-          <NotificationsActiveIcon style={NotificationBtnStyle} variant="contained" onClick={onClickChangeNotification} />
-          <Typography style={NotificationTextStyle} onClick={onClickChangeNotification}>Enable Notification</Typography>
-        </div> : <Typography style={NotificationTextStyle2} onClick={onClickChangeNotification}>Enable Notification</Typography>)
-        : <></>}
     </Box>
   );
 }

@@ -37,6 +37,7 @@
     "http-proxy-middleware": "^2.0.6",
     "idb": "^7.1.1",
     "install": "^0.13.0",
+    "iso-3166-1-alpha-2": "^1.0.1",
     "lodash": "^4.17.21",
     "lodash-move": "^1.1.1",
     "lodash.clamp": "^4.0.3",

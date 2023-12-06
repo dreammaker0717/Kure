@@ -12,7 +12,8 @@ import {
   SIG_REFILL_CUSTOMER_DATA,
   SIG_REQUEST_ADJUSTMENT_DATA,
   SIG_REQUEST_COUPON_DATA,
-  SIG_REQUEST_USERS_PROFILE
+  SIG_REQUEST_USERS_PROFILE,
+  SIG_ORDER_LIST_CHANGED
 } from 'Common/signals';
 import { decryptCouponData, fetchCouponData } from 'services/idb_services/couponManager';
 import { CouponDataContext } from 'services/context_services/couponDataContext';
@@ -22,6 +23,7 @@ import { CommonDataProvider } from 'services/context_services/commonDataContext'
 import { CartDataProvider } from 'services/context_services/cartDataContext';
 import { Resource } from "services/api_services/Resource";
 import { useNavigate } from "react-router-dom";
+import { fetchOrderNotification } from 'services/idb_services/orderManager';
 
 const ContextContainer = (props) => {
   const db = new KureDatabase();

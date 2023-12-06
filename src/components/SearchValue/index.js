@@ -79,7 +79,7 @@ const SearchValue = ({ searchValue, setSearchValue, setopenSearchBox }) => {
             ':hover': { bgcolor: '#32BEB9', borderRadius: '10px' }
           }}
         >
-          <Image alt="" src={data.product_image} height="100%" width="100%" sx={{ flex: 1 }} />
+          <Image alt="" src={data.product_image_thumbnail} height="100%" width="100%" sx={{ flex: 1 }} />
           <ListItemText
             sx={{ flex: 2, '.MuiTypography-root': { fontSize: '1rem' } }}
             primary={data.title}

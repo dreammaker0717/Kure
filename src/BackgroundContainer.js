@@ -67,13 +67,11 @@ const BackgroundContainer = (props) => {
    */
   const syncImportantData = async () => {
     const sync_customer_result = await backgroundServiceMessenger('customer-data-sync');
-    console.log("sync_customer_result==", sync_customer_result);
     if (!sync_customer_result) {
       await syncCustomersWithDrupal();
     }
 
     const sync_order_result = await backgroundServiceMessenger('order-data-sync');
-    console.log("sync_order_result==", sync_order_result);
     if (!sync_order_result) {
       await syncOrdersWithDrupal();
     }

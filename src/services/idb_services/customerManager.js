@@ -13,7 +13,7 @@ import {
   SIG_ON_REFRESH_CART,
   SIG_REFILL_CUSTOMER_DATA,
   SIG_STORE_DATA_FETCHED,
-  SIG_TOKENWORKS_SYNCED
+  SIG_MESSAGE_MODAL_OPEN
 } from "Common/signals";
 import { Resource } from "services/api_services/Resource";
 import { IDB_TABLES, KureDatabase } from "./KureDatabase";
@@ -267,7 +267,6 @@ export const syncOneCustomerWithDrupal = async (customer, only_address = false) 
 }
 
 export const syncCustomersWithDrupal = async () => {
-  console.log("syncCustomersWithDrupal Method");
   const db = new KureDatabase();
   const customers = await db.getAll(IDB_TABLES.customer_data);
   const customers_to_sync = customers.filter(customer => customer.has_changed === true);
@@ -314,4 +313,14 @@ export const syncCustomersWithDrupal = async () => {
 
   broadcastMessage(SIG_ON_REFRESH_CART, null);
   broadcastMessage(SIG_REFILL_CUSTOMER_DATA, null);
+}
+
+export const openMessagesModal = async (message) => {
+  broadcastMessage(SIG_MESSAGE_MODAL_OPEN, message);
+}
+
+export const getOrderInfo = async (uid) => {
+  const db = new KureDatabase();
+  const users_info = await db.get(uid, IDB_TABLES.users);
+  return users_info;
 }

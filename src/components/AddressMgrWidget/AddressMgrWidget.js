@@ -14,7 +14,10 @@ const AddressMgrWidget = (props) => {
   const { profileData, setProfileData } = useContext(UsersProfileContext);
   const { onSubmit, addressList, titleColor } = props;
   const [selectedAddress, setSelectedAddress] = useState(null);
+  const [selectedOldAddress, setSelectedOldAddress] = useState(null);
   const [isNew, setIsNew] = useState(true);
+  const iso3166 = require('iso-3166-1-alpha-2');
+
   useEffect(() => {
 
     getCart().then((res) => {
@@ -23,6 +26,7 @@ const AddressMgrWidget = (props) => {
       const billing_info = cartInfo.billing_profile;
       if (Object.keys(addressList).length == 0 || status == false || !cartInfo || billing_info == null || billing_info == undefined || Object.keys(billing_info) == 0) {
         setSelectedAddress({});
+        setSelectedOldAddress({});
         setIsNew(true);
       } else {
         const selected_address = Object.entries(billing_info)[0];
@@ -33,12 +37,12 @@ const AddressMgrWidget = (props) => {
         address_body.address.profile_id = profile_id;
 
         setSelectedAddress(address_body.address);
+        setSelectedOldAddress(address_body.address);
         setIsNew(false);
       }
     })
   }, []);
 
-  console.log("selectedAddress::: ", selectedAddress)
   const cssStart = {
     fontSize: '1em',
     color: titleColor == undefined ? "#FFF" : titleColor,
@@ -60,6 +64,11 @@ const AddressMgrWidget = (props) => {
   }
 
   const onClickSubmit = async (values) => {
+    if (Object.keys(values).length === 0) {
+      onSubmit();
+      return;
+    }
+
     const res = await addOrUpdateOneAddress(values, profileData);
     if (res == false) {
       console.log(res);
@@ -71,6 +80,12 @@ const AddressMgrWidget = (props) => {
       onSubmit();
     }, 200);
   }
+
+  const getCountryCode = async (countryName) => {
+    const convertedString = countryName?.replace(/\b\w/g, (char) => char.toUpperCase());;
+    const countriyCode = await iso3166.getCode(convertedString);
+    return countriyCode;
+  };
 
   return (
     <Box sx={{ pt: '10px', pb: "30px" }}>
@@ -90,24 +105,39 @@ const AddressMgrWidget = (props) => {
           "postal_code": "",
           "phone": "",
         }) : selectedAddress}
-                validationSchema={Yup.object().shape({
-                  address_line1: Yup.string().max(255).required('Address is required'),
-                  locality: Yup.string().max(255).required('City is required'),
-                  administrative_area: Yup.string().max(255).required('State is required'),
-                  postal_code: Yup.string().max(255).required('Zip code is required'),
-                  country_code: Yup.string().max(2).required('Country is required'),
-                  given_name: Yup.string().max(255).required('First name is required'),
-                  family_name: Yup.string().max(255).required('Last name is required'),
-                  phone: Yup.string()
-                  .required('Phone number is required')
-                  .test('phone-style', 'Phone number is not valid', (v) => {
-                    if (v === undefined || v === '') return false;
-                    return v.match(PhoneRegExp) !== null;
-                  })
-                })}
-                onSubmit={async (values, { setErrors, setStatus, setSubmitting }) => {
-                  onClickSubmit(values)
-                }}
+          validationSchema={Yup.object().shape({
+            address_line1: Yup.string().max(255).required('Address is required'),
+            locality: Yup.string().max(255).required('City is required'),
+            administrative_area: Yup.string().max(255).required('State is required'),
+            postal_code: Yup.string().max(255).required('Zip code is required'),
+            country_code: Yup.string().required('Country is required'),
+            given_name: Yup.string().max(255).required('First name is required'),
+            family_name: Yup.string().max(255).required('Last name is required'),
+            phone: Yup.string()
+              .required('Phone number is required')
+              .test('phone-style', 'Phone number is not valid', (v) => {
+                if (v === undefined || v === '') return false;
+                return v.match(PhoneRegExp) !== null;
+              })
+          })}
+          onSubmit={async (values, { setErrors, setStatus, setSubmitting }) => {
+            if (values.country_code == "" && values.country_code == undefined) {
+              setErrors({ country_code: 'Please enter the country name accurately.' });
+              return;
+            } else {
+              if (values.country_code.length > 2) {
+                const countryCode = await getCountryCode(values.country_code);
+                console.log(countryCode);
+                if (countryCode == null) {
+                  setErrors({ country_code: 'Please enter the country name accurately.' });
+                  return;
+                } else {
+                  values.country_code = countryCode;
+                }
+              }
+              onClickSubmit(values);
+            }
+          }}
         >
           {({ errors, handleBlur, handleChange, handleSubmit, isSubmitting, touched, values }) => (
             <form noValidate onSubmit={handleSubmit}>
@@ -365,7 +395,7 @@ const AddressMgrWidget = (props) => {
                         color="error"
                         sx={{ background: '#FF494B' }}
                         onClick={() => {
-                          onClickSubmit(selectedAddress)
+                          onClickSubmit(selectedOldAddress)
                         }}
                       >
                         Cancel Edit

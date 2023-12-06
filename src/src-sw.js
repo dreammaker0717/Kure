@@ -5,10 +5,11 @@ import { precacheAndRoute } from 'workbox-precaching';
 import { registerRoute } from 'workbox-routing';
 import { StaleWhileRevalidate, CacheFirst } from 'workbox-strategies';
 import { CacheableResponsePlugin } from 'workbox-cacheable-response';
-import { syncCustomersWithDrupal } from "services/idb_services/customerManager";
+import { syncCustomersWithDrupal, openMessagesModal, getOrderInfo } from "services/idb_services/customerManager";
 import { IDB_TABLES, KureDatabase } from "services/idb_services/KureDatabase";
-import { syncOrdersWithDrupal } from "services/idb_services/orderManager";
+import { syncOrdersWithDrupal, fetchOrder } from "services/idb_services/orderManager";
 import { NetworkFirst } from 'workbox-strategies';
+import { convertTimestampToDate } from 'Common/functions';
 
 self.addEventListener('install', event => {
   // Perform installation tasks
@@ -83,7 +84,7 @@ registerRoute(
 /**
  * Listen for push notifications which will come from Drupal.
  */
-self.addEventListener('push', event => {
+self.addEventListener('push', async event => {
   console.log('Push event:', event);
   console.log('self :', self);
 
@@ -108,6 +109,7 @@ self.addEventListener('push', event => {
               {
                 action: 'view',
                 title: 'View message',
+                data: { title, body }
               },
               {
                 action: 'dismiss',
@@ -125,12 +127,49 @@ self.addEventListener('push', event => {
             await db.put([data], IDB_TABLES.background_messages)
           })
         );
-        break;
 
+        break;
       case 'object_catalog':
         const { object_type, entity_id } = payload;
+
+        if (object_type !== "commerce_order") return;
+
+        const order_response = await fetchOrder(entity_id);
+        console.log("order_response == ", order_response);
+
+        if (order_response.length == 0) return;
+        if (order_response.state == "completed") return;
+
+        const customer_info = await getOrderInfo(order_response?.customer_id);
+        let order_type = order_response.type ? order_response.type.replace(/_/g, ' ').replace(/\b\w/g, char => char.toUpperCase()) : 'Delivery';
+        let order_state = order_response.state ? order_response.state.replace(/_/g, ' ').replace(/\b\w/g, char => char.toUpperCase()) : '';
+        let order_time = convertTimestampToDate(order_response.changed);
+        let order_id = order_response.order_id;
+        let count = order_response.order_items.length;
+        let message_title = "A new order from " + customer_info?.name + "\n";
+        let message_body = "OrderID: " + order_id + "\nTime: " + order_time + "\nType: " + order_type + "\nState: " + order_state + "\nCount: " + count + " products";
+
         // If the app is open/closed.
         event.waitUntil(
+          self.registration.showNotification(message_title, {
+            body: message_body,
+            icon: './logo.png',
+            badge: './logo.png',
+            tag: 'notification-2',
+            requireInteraction: true,
+            actions: [
+              {
+                action: 'view',
+                title: 'View Order',
+                data: { object_type, entity_id }
+              },
+              {
+                action: 'dismiss',
+                title: 'Dismiss',
+              },
+            ],
+          }),
+
           self.clients.matchAll().then(clients => {
             clients.forEach(client => client.postMessage({ type: object_type, entity_id }));
           })
@@ -148,7 +187,6 @@ self.addEventListener('push', event => {
 self.addEventListener('notificationclick', function (event) {
   // Close the notification.
   event.notification.close();
-
   // Determine which action was clicked.
   if (event.action === 'view') {
     // Open or focus the PWA and navigate to a specific route.
@@ -161,7 +199,15 @@ self.addEventListener('notificationclick', function (event) {
           var client = clientList[i];
           if ('focus' in client) {
             // Focus an existing window.
-            return client.focus();
+            client.focus();
+            console.log("event", event.notification);
+            if (event.notification.tag === "notification-1") {
+              const title = event.notification.title;
+              const content = event.notification.body;
+              const message = { title, content };
+              openMessagesModal(message);
+            }
+            return;
           }
         }
         if (self.clients.openWindow) {

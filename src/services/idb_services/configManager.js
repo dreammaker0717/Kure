@@ -300,8 +300,8 @@ export const idbResetConfig = async (ids_to_delete) => {
 
 export const idbResetConfigAll = () => {
   return [
-    CONFIG_CONSTANTS.ACTIVE_CART_ID,
-    CONFIG_CONSTANTS.ACTIVE_STORE_ID,
+    // CONFIG_CONSTANTS.ACTIVE_CART_ID,
+    // CONFIG_CONSTANTS.ACTIVE_STORE_ID,
     CONFIG_CONSTANTS.CART_HISTORY,
     CONFIG_CONSTANTS.LOGGED_IN_USER,
     CONFIG_CONSTANTS.IS_ONLINE,
