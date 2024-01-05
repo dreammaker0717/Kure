@@ -20,7 +20,7 @@ const BackgroundContainer = (props) => {
   useEffect(() => {
     setIntervalID(setInterval(timer, checkTime));
     return () => {
-            clearInterval(intervalId);
+      clearInterval(intervalId);
     };
   }, []);
   const timer = () => setTick((t) => !t);
@@ -75,7 +75,7 @@ const BackgroundContainer = (props) => {
     if (!sync_order_result) {
       await syncOrdersWithDrupal();
     }
-      }
+  }
   return (
     <div>
     </div>

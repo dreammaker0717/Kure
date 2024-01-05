@@ -12,7 +12,7 @@ import {
   SIG_FINISH_REQUEST_USERS_PROFILE,
   SIG_ON_REFRESH_CART,
   SIG_REFILL_CUSTOMER_DATA,
-  SIG_STORE_DATA_FETCHED,
+  SIG_TOKENWORKS_SYNCED,
   SIG_MESSAGE_MODAL_OPEN
 } from "Common/signals";
 import { Resource } from "services/api_services/Resource";
@@ -53,7 +53,7 @@ export const addUpdateCustomerData = async (selected_customer, only_address = fa
 
   if (sync_with_drupal.status) {   // online
     new_tokenworks_customer = sync_with_drupal.data;
-  }else { //offline
+  } else { //offline
     new_tokenworks_customer = selected_customer;
   }
 
@@ -245,7 +245,7 @@ export const syncOneCustomerWithDrupal = async (customer, only_address = false) 
     // Because our customer object now has a Drupal UID, let's update it. We must create a new object because
     // our IDB table uses the UID as the primary key.
     await db.put([customer_new_data], IDB_TABLES.customer_data);
-
+    broadcastMessage(SIG_TOKENWORKS_SYNCED, customer_new_data);
     // Remove customer_old_data from IDB.
     if (customer_old_data.uid === customer_old_data.uid_react) {
       await db.deleteAllByIdList([customer_old_data.uid], IDB_TABLES.customer_data);
@@ -255,8 +255,9 @@ export const syncOneCustomerWithDrupal = async (customer, only_address = false) 
       data: customer_new_data,
       message: null,
     }
-  }).catch(err => {
-    console.log("syncOneCustomerWithDrupal error: ", err.message);
+  }).catch(async err => {
+    console.log("syncOneCustomerWithDrupal error: ", err);
+    await db.deleteAllByIdList([customer.uid], IDB_TABLES.customer_data);
     return {
       status: false,
       data: null,
@@ -270,7 +271,7 @@ export const syncCustomersWithDrupal = async () => {
   const db = new KureDatabase();
   const customers = await db.getAll(IDB_TABLES.customer_data);
   const customers_to_sync = customers.filter(customer => customer.has_changed === true);
-  // console.log('customers_to_sync', customers_to_sync);
+  console.log('customers_to_sync', customers_to_sync);
   let changed_customers = {};
   if (customers_to_sync.length > 0) {
     await Promise.all(customers_to_sync.map(async customer => {

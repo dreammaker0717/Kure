@@ -59,7 +59,7 @@ export const addOrUpdateOneAddress = async (address_info, profileData) => {
   console.log("new_customer_res, ", new_customer_res)
   if (new_customer_res.status == 200) {
     const new_customer = new_customer_res.data;
-    const new_addresses = new_customer.user_addresses;
+    const new_addresses = new_customer?.user_addresses;
     if (new_addresses[old_uuid] && new_addresses[old_uuid].data) {
       const new_uuid = new_addresses[old_uuid].data;
       // change uuid to new one

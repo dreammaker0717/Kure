@@ -29,6 +29,16 @@ const App = () => {
 
   useEffect(() => {
     document.addEventListener('visibilitychange', handleVisibilityChange, false);
+    if ('serviceWorker' in navigator) {
+      window.addEventListener('load', async () => {
+        try {
+          const registration = await navigator.serviceWorker.register('/sw.js', { scope: '/' });
+          console.log('Service Worker registered with scope:', registration.scope);
+        } catch (error) {
+          console.error('Error registering Service Worker:', error);
+        }
+      });
+    }
     return () => {
       document.removeEventListener('visibilitychange', handleVisibilityChange, false);
     };

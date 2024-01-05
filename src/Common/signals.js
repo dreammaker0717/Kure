@@ -45,7 +45,12 @@ export const SIG_CHECKOUT_COMPLETE = "SIG_CHECKOUT_COMPLETE";   // this is when 
 
 
 export const SIG_ORDER_SYNCHED = "SIG_ORDER_SYNCHED";
+export const SIG_ORDERS_SYNCHED = "SIG_ORDERS_SYNCHED";
 export const SIG_ORDER_LIST_CHANGED = "SIG_ORDER_LIST_CHANGED";
+export const SIG_SYNCED_ORDERS_CONFIRM_MODAL = "SIG_SYNCED_ORDERS_CONFIRM_MODAL";
+export const SIG_ON_REFRESH_MESSAGE = "SIG_ON_REFRESH_MESSAGE";
+export const SIG_PRODUCT_STOCK_CHANGED = "SIG_PRODUCT_STOCK_CHANGED";
+export const SIG_CASH_AMOUNT_PANEL = "SIG_CASH_AMOUNT_PANEL";
 
 /**
  * @deprecated: We're now using the cart object's state. When finished we set the order state to 'completed'.

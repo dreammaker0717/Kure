@@ -1,4 +1,4 @@
-import { SIG_AUTH_CHANGED, SIG_CHANNEL, SIG_ONE_CUSTOMER_RECEIVED, SIG_ORDER_LIST_CHANGED, SIG_RECEIVE_NOTIFICATION, SIG_MESSAGE_MODAL_OPEN } from 'Common/signals';
+import { SIG_AUTH_CHANGED, SIG_CHANNEL, SIG_ONE_CUSTOMER_RECEIVED, SIG_RECEIVE_NOTIFICATION, SIG_MESSAGE_MODAL_OPEN } from 'Common/signals';
 import React, { useContext, useEffect, useState } from 'react';
 import "react-toastify/dist/ReactToastify.css";
 import { clearAllData, } from 'services/idb_services/initiateData';

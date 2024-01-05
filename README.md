@@ -32,6 +32,17 @@ yarn start
 - Google Workbench (offline-first)
 - OAuth to authorize Drupal users
 
+## Using Capacitor to build the Android project
+
+- npx cap copy: Copies the web assets (build artifacts from your web app) into the native Android project. You need to run this after every web app build.
+- npx cap open android: Opens the native Android project in Android Studio. This is useful for running on an emulator or a device directly from Android Studio or to make modifications to the native project.
+- npx cap sync: Performs copy, and then updates the native plugins and dependencies defined in package.json. This command is a combination of npx cap copy and npx cap update.
+- npx cap update: Updates the native plugins and dependencies based on package.json. Unlike sync, it does not copy web assets.
+- npx cap doctor: Checks the current setup for common problems and prints out a report.
+- npx cap run android: Runs the app on a connected device or emulator, similar to npm run build android, but also includes the copy and sync steps.
+- npx cap add ios: Adds the iOS platform to your project, allowing you to build for iOS devices as well.
+- npx cap serve: Serves the app through a local development server, useful for testing in the browser or on a device with live reload.
+
 ## Testing scenarios
 
 Scenario one. A customer submits an order (needs_processing), an employee handles the order by completing it.

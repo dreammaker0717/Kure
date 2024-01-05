@@ -11,13 +11,22 @@ import {
 import { convertToNumber, getCalculatedCartTotals, monetizeToLocal } from 'Common/functions';
 import { SIG_CHANNEL, SIG_CHECKOUT_PREPARE, } from 'Common/signals';
 import { USER_TYPE } from 'Common/constants';
+import { cashAmountPanel } from "../../../../services/idb_services/orderManager"
 import { Resource } from 'services/api_services/Resource';
 
 const OneSummaryItem = (props) => {
-  const { title, value, sx } = props;
+  const { title, value, sx, onClick } = props;
+  const style = {
+    position: 'relative',
+    zIndex: 9999,
+    cursor: 'pointer'
+  };
+
   return <Grid container direction={'row'} justifyContent={'space-between'}
     sx={sx ? sx : {}}
     spacing={2}
+    style={title === "Cash Amount" ? style : undefined}
+    onClick={onClick}
   >
     <Grid item
       xs={9.5}
@@ -59,6 +68,10 @@ const CartSummaryWidget = (props) => {
   // console.log("cashAmount: ", cashAmount);
   // console.log("total: ", total);
   // console.log("overpaid_amount: ", overpaid_amount);
+
+  const cashAmountPrompt = async () => {
+    await cashAmountPanel();
+  }
 
   return (
     <>
@@ -135,6 +148,7 @@ const CartSummaryWidget = (props) => {
         {
           (cart != null && cart.payment && cart.payment != "") &&
           <OneSummaryItem
+            onClick={cashAmountPrompt}
             title={"Cash Amount"}
             value={monetizeToLocal(convertToNumber(cart.payment, 0))}
             sx={{ color: '#32BEB9', py: '0px', fontSize: "16px" }}

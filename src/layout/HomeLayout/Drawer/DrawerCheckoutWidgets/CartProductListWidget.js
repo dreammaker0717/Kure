@@ -36,7 +36,7 @@ import { OrderProductType, USER_TYPE } from "Common/constants";
 import { useNavigate } from "react-router-dom";
 
 function CartProductListWidget(props) {
-  const { cart, setCart, is_disabled } = props;
+  const { cart, setCart, is_disabled, color } = props;
   const navigate = useNavigate();
   const [onOpenConfirm, setOnOpenConfirm] = useState(false);
   const [onOpenCreateConfirm, setOnOpenCreateConfirm] = useState(false);
@@ -192,6 +192,7 @@ function CartProductListWidget(props) {
                   overflow: "hidden",
                   textOverflow: "ellipsis",
                   maxHeight: "34px",
+                  color: color ? "#ffffff" : ''
                 }}
                   className='custom-button custom-button-underline'
                 >
@@ -295,6 +296,7 @@ function CartProductListWidget(props) {
                 : <></>}
             </Box>);
             return (
+              // order_item.purchased_entity &&
               <Box key={`order-item-${order_item.purchased_entity?.variation_id}`}
                 sx={{
                   p: "5px", paddingBottom: { xs: '15px', sm: '5px' },
@@ -324,7 +326,7 @@ function CartProductListWidget(props) {
                           </Grid>
                         }
                         {can_add_count >= 0 &&
-                          <Grid item sm={2} sx={{ textAlign: 'right' }}>
+                          <Grid item sm={2} sx={{ textAlign: 'right', color: color ? "#ffffff" : '' }} >
                             {uiTotalPrice}
                           </Grid>
                         }

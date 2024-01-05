@@ -28,7 +28,8 @@ const SearchProductWidget = (props) => {
             const filteredData = data.filter((x) => {
                 if (x['store_id'].split(',').map((s) => s.trim()).includes(`${storeId}`) == false)
                     return false;
-
+                if (x['status'] == "0") return false;
+                if (parseInt(x['stock']) <= 0) return false;
                 // The searchValue is a string that can contain multiple words. Each word must be found in x['title'].
                 const words = searchValue.split(' ');
                 const title = x['title'].toLowerCase();
@@ -44,7 +45,14 @@ const SearchProductWidget = (props) => {
                 // //   return false;
                 // return true;
             }).slice(0, 10);
-
+            filteredData.sort((a, b) => new Date(a.expiring_date) - new Date(b.expiring_date));
+            filteredData.forEach(element => {
+                const linkToRemove = element.link; // Replace 123 with the specific ID you want to remove
+                const indexToRemove = filteredData.findIndex(item => item.link === linkToRemove);
+                if (indexToRemove >= 0) {
+                    filteredData.splice(indexToRemove + 1, 1);
+                }
+            });
             setSearchedList(filteredData);
         });
     }, [keyword]);

@@ -69,6 +69,14 @@ const AuthLogin = () => {
                 // We'll use this later on to determine if we should close their session when the browser is closed.
 
                 localStorage.setItem(resource.config.user_info, JSON.stringify(user_data.data));
+
+                let new_messages = [
+                  { type: 'draft', count: 0, entity_id: [] },
+                  { type: 'needs_processing', count: 0, entity_id: [] },
+                  { type: 'parked', count: 0, entity_id: [] },
+                  { type: 'completed', count: 0, entity_id: [] },
+                ];
+                await db.put(new_messages, IDB_TABLES.unread_messages);
                 idbSetLoggedInUser(JSON.stringify(user_data.data));
                 // Send our subscription request.
 
@@ -88,7 +96,7 @@ const AuthLogin = () => {
                 });
 
                 await eventUserLoggedIn(user_data.data);
-            
+
                 broadcastMessage(SIG_REQUEST_USERS_PROFILE);
                 broadcastMessage(SIG_REQUEST_COUPON_DATA);
                 broadcastMessage(SIG_AUTH_CHANGED)

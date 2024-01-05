@@ -53,24 +53,24 @@ export const initiateData = async () => {
     const first_products = await resource.commerceProductDataSync({ page: 0 });
     let variations = JSON.parse(first_products.data.variations[0]);
     await db.put(variations, IDB_TABLES.product_data);
+    broadcastMessage(SIG_ALL_PRODUCT_FETCHED);
 
     const total_pages = first_products.data.pager.total_pages;
 
-
     let product_task_list = [];
-
 
     for (let page = 1; page <= total_pages - 1; page++) {
       const one_task = new Promise(async (resolve, reject) => {
         const products = await resource.commerceProductDataSync({ page: page });
         variations = JSON.parse(products.data.variations[page]);
         await db.put(variations, IDB_TABLES.product_data)
+        broadcastMessage(SIG_ALL_PRODUCT_FETCHED);
         resolve();
       });
       product_task_list.push(one_task)
     }
     await Promise.all(product_task_list);
-    broadcastMessage(SIG_ALL_PRODUCT_FETCHED);
+    // broadcastMessage(SIG_ALL_PRODUCT_FETCHED);
     await sendCategoryUpdateMessage();
     console.log("Finished")
 

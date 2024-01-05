@@ -118,7 +118,7 @@ function DrawerAccount() {
     console.log(item)
     switch (item.type) {
       case 'logout':
-        setProfileData([]);
+        // setProfileData([]);
         idbLogoutUser().then(res => {
           setMessageToast('Logged out successfully');
           setOpen(false);

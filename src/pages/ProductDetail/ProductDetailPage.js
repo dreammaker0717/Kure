@@ -5,16 +5,20 @@ import { useLocation } from 'react-router';
 // import plusIcon from 'assets/images/icons/icon-plus-light.svg';
 import Image from 'components/Image/index';
 import { IDB_TABLES, KureDatabase } from 'services/idb_services/KureDatabase';
-import { addRemoveProductFromCart, getValidQuantityOfProduct } from 'services/idb_services/orderManager';
 import {
-  convertToNumber,
+  addRemoveProductFromCart,
+  getValidQuantityOfProduct,
+  getStockProduct
+} from 'services/idb_services/orderManager';
+import {
+  convertToNumber, filterAndSortProducts,
   getColorOfVariation,
   getSizeOfVariation,
   getUniqueArray,
   monetizeToLocal
 } from 'Common/functions';
 import { CircularProgress } from '@mui/material';
-import { SIG_ALL_PRODUCT_FETCHED, SIG_CHANNEL } from 'Common/signals';
+import { SIG_PRODUCT_STOCK_CHANGED, SIG_CHANNEL } from 'Common/signals';
 import { customToast } from 'components/CustomToast/CustomToast';
 import { UsersProfileContext } from 'services/context_services/usersProfileContext';
 import dateFormater from 'utils/dateFormater';
@@ -42,7 +46,7 @@ const ProductDetailPage = () => {
 
   const [attList, setAttList] = useState();
 
-  const [formatedDate, setFormatedDate] = useState();
+  const [formattedDate, setFormattedDate] = useState();
   // const [loading, setLoading] = useState(true);
   const [loading, setLoading] = useState(false);
   const [isBusy, setIsBusy] = useState(false);
@@ -51,6 +55,7 @@ const ProductDetailPage = () => {
   useEffect(() => {
     window.scrollTo({ top: 0, behavior: 'smooth' });
   }, [location])
+
   useEffect(() => {
     if (!variation) return;
     if (!variation.attributes) return;
@@ -59,6 +64,7 @@ const ProductDetailPage = () => {
       pathname: `/${variation.link}/${variation.variation_id}`
     })
   }, [variation])
+
   useEffect(() => {
     // read variation list at first page loading.
 
@@ -68,6 +74,7 @@ const ProductDetailPage = () => {
     db.getAllFromIndex('link', drupal_variation_link, IDB_TABLES.product_data).then((data) => {
       if (data.length == 0) return;
 
+      data = filterAndSortProducts(data);
       setVariationList(data);
       setCurrentVariation(data);
       // const product_id = data[0].product_id;
@@ -81,7 +88,8 @@ const ProductDetailPage = () => {
       //   }
       // })
     });
-  }, [drupal_variation_link, drupal_variation_id]);
+  }, [drupal_variation_link]);
+
   const setCurrentVariation = (variationList) => {
     // console.log("VVV: ", variationList)
     // console.log('variationlist changed', variationList);
@@ -118,8 +126,13 @@ const ProductDetailPage = () => {
     // setSizeList(_size_list)
     // setColorList(_color_list)
 
+
+    // @TODO: This condition is in the wrong place. Or better, it should utilize a query to the IDB store to get the
+    //        variation. We can't rely on the variationList because it most likely has been filtered out by the parent
+    //        caller.
     if (drupal_variation_id) {
       setVariation(variationList.find(x => x.variation_id == drupal_variation_id))
+      setStock(variationList.find(x => x.variation_id == drupal_variation_id)?.stock);
     } else {
       if (variation) return;
       const variation_id_list = variationList.map(x => x.variation_id);
@@ -133,28 +146,53 @@ const ProductDetailPage = () => {
       // console.log("tmp_variation_id: ", tmp_variation_id, variationList);
       if (tmp_variation_id != null) {
         setVariation(variationList.find(x => x.variation_id == tmp_variation_id))
+        setStock(variationList.find(x => x.variation_id == tmp_variation_id)?.stock);
       } else {
         setVariation(variationList[0]);
+        setStock(variationList[0]?.stock);
       }
     }
+
     // console.log("CART DATA: ", cartData);
   }
   // console.log("VARIATION", variation);
 
   useEffect(() => {
     if (!variation) return;
-    getValidQuantityOfProduct(variation.variation_id).then((_stock) => {
-      // console.log("STOCK: ", _stock)
-      setStock(_stock);
-    })
+    // getValidQuantityOfProduct(variation.variation_id).then((_stock) => {
+    //   console.log("STOCK 2: ", _stock)
+    //   console.log("variation 2: ", variation)
+    //   console.log("variation_id 2: ", variation.variation_id)
+    //   setStock(_stock);
+    // })
+    // }, [variation, cartData]);
+  }, [variation]);
 
-
-  }, [variation, cartData]);
+  useEffect(() => {
+    const channel = new BroadcastChannel(SIG_CHANNEL);
+    channel.addEventListener('message', async (event) => {
+      const { type, data } = event.data;
+      const _data = data;
+      console.log(type);
+      switch (type) {
+        /**
+         * @TODO: We need to add a new signal for when a push notification is processed for a variation.
+         */
+        case SIG_PRODUCT_STOCK_CHANGED:
+          console.log("variation === ", drupal_variation_id);
+          if (!drupal_variation_id) return;
+          getStockProduct(drupal_variation_id).then((_stock) => {
+            setStock(_stock);
+          })
+          break;
+      }
+    });
+  }, []);
 
   useEffect(() => {
     const data = Number(variation?.last_inventory_count_date);
     const transformToDate = new Date(data * 1000);
-    setFormatedDate(dateFormater(transformToDate));
+    setFormattedDate(dateFormater(transformToDate));
   }, [variation]);
 
   const setPlusMinusQuantity = (c) => {
@@ -170,6 +208,7 @@ const ProductDetailPage = () => {
     }
     setQuantity(cur_quantity)
   }
+
   const addToCart = () => {
     setIsBusy(true);
     addRemoveProductFromCart(variation, quantity)
@@ -354,7 +393,7 @@ const ProductDetailPage = () => {
                 component="span"
               />
               {!loading ? (
-                <Typography children={formatedDate} component="span" sx={{ fontSize: '1rem' }}/>
+                <Typography children={formattedDate} component="span" sx={{ fontSize: '1rem' }}/>
               ) : (
                 <Skeleton sx={{ bgcolor: '#f7f7f7' }} width="20%"/>
               )}

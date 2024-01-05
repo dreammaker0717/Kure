@@ -60,7 +60,11 @@ function CheckoutAddressPickup(props) {
       setPickUpStatus(PICKUP_STATUS.AddCoupon);
     } else if (pickUpStatus.value === PICKUP_STATUS.Complete.value && resource.getUserRole() !== USER_TYPE.CUSTOMER) {
       setPickUpStatus(PICKUP_STATUS.Checkout);
-
+      if (can_submit) {
+        setPickUpStatus(PICKUP_STATUS.AddCoupon);
+      } else {
+        setPickUpStatus(PICKUP_STATUS.Checkout);
+      }
     }
     // switch (pickUpStatus.value) {
     //   case PICKUP_STATUS.SelectStore.value:
@@ -87,7 +91,11 @@ function CheckoutAddressPickup(props) {
     } else if (pickUpStatus.value === PICKUP_STATUS.AddCoupon.value && resource.getUserRole() === USER_TYPE.CUSTOMER) {
       setPickUpStatus(PICKUP_STATUS.Complete);
     } else if (pickUpStatus.value === PICKUP_STATUS.AddCoupon.value && resource.getUserRole() !== USER_TYPE.CUSTOMER) {
-      setPickUpStatus(PICKUP_STATUS.Checkout);
+      if (can_submit) {
+        setPickUpStatus(PICKUP_STATUS.Complete);
+      } else {
+        setPickUpStatus(PICKUP_STATUS.Checkout);
+      }
     } else if (pickUpStatus.value === PICKUP_STATUS.Checkout.value) {
       setPickUpStatus(PICKUP_STATUS.Complete);
     } else if (pickUpStatus.value === PICKUP_STATUS.Complete.value) {

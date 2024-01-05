@@ -40,7 +40,7 @@ const OrderContentRow = (props) => {
         background: order['order_id'] == selOrderId ? "#161616" : "gray",
       },
     }}
-         onClick={() => onClickOrder(order)}
+      onClick={() => onClickOrder(order)}
     >
       {/* {console.log("order: ", order)} */}
       <Box>

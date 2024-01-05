@@ -156,10 +156,10 @@ const ContextContainer = (props) => {
         // the profileData context.
         case SIG_DB_UPDATE_5:
           console.log("SIG_DB_UPDATE_5");
-          setProfileData([])
-          await db.clear(IDB_TABLES.users_profile_data);
+          // setProfileData([])
+          // await db.clear(IDB_TABLES.users_profile_data);
           await idbLogoutUser();
-          navigate('/login');
+          // navigate('/login');
           break;
 
         // To ensure users have the latest product data, remove it.

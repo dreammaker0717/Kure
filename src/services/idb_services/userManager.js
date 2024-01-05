@@ -116,7 +116,7 @@ export const fetchUsersProfileData = async () => {
     };
   });
 
-  const CONCURRENT_REQUESTS = 4;
+  const CONCURRENT_REQUESTS = 3;
   const tasks = [];
   let next_index_to_process = 0;
   let finished_tasks_count = 0;
@@ -200,7 +200,7 @@ export const parseUserProfileData = async () => {
     };
   });
 
-  const CONCURRENT_REQUESTS = 2;
+  const CONCURRENT_REQUESTS = 1;
   const tasks = [];
   let nextIndexToProcess = 0;
   let finishedTasksCount = 0;
@@ -308,8 +308,8 @@ export const getTokenworksWithProfile = async (profileData, force_fetch) => {
 export const idbLogoutUser = async () => {
   await resource.userLogout();
   await db.clearTable(IDB_TABLES.coupon_data);
-  await db.clearTable(IDB_TABLES.users_pin_data);
-  await db.clearTable(IDB_TABLES.users);
+  // await db.clearTable(IDB_TABLES.users_pin_data);
+  // await db.clearTable(IDB_TABLES.users);
   await idbResetConfig(idbResetConfigAll());
   // Note: We might not have to delete this, what if the user logs out when they are offline and data hasn't synced yet?
   // await db.clearTable(IDB_TABLES.customer_data);

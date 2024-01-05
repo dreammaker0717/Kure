@@ -33,14 +33,14 @@ import { getTokenworksData } from "services/idb_services/userManager";
 const resource = new Resource();
 
 const CheckoutWidget = (props) => {
-  const { cart, processingUserProfileData, cashierIdExists, setCartFreeze, cartTotals, cartReturnTotals } = props;
+  const { cart, processingUserProfileData, cashierIdExists, processCartSubmission, cartTotals, cartReturnTotals } = props;
   const { method, setMethod } = props;
   const { profileData } = useContext(UsersProfileContext);
 
   const enablePickUp = useMemo(() => {
     if (!cart) return false;
     if (!cart.order_items) return false;
-    if (cart.order_items.length == 0) return false;
+    if (cart.order_items?.length == 0) return false;
 
     // // User is signed in and is a customer.
     // if (resource.getUserRole() === USER_TYPE.CUSTOMER) {
@@ -58,7 +58,7 @@ const CheckoutWidget = (props) => {
   const enableDelivery = useMemo(() => {
     if (!cart) return false;
     if (!cart.order_items) return false;
-    if (cart.order_items.length == 0) return false;
+    if (cart.order_items?.length == 0) return false;
     if (!cart.customer_id) return true;
     if (cart.customer_id == "") return false;
 
@@ -142,7 +142,7 @@ const CheckoutWidget = (props) => {
   }, []);
 
   const onClickConfirmCheckout = async () => {
-    setCartFreeze();
+    processCartSubmission();
   }
 
   // There's data in the background which hasn't been processed yet.
@@ -176,7 +176,7 @@ const CheckoutWidget = (props) => {
           <SmallPinNumPad />
         </div>
         :
-        <div style={{ display: cart.order_items.length > 0 ? "block" : "none" }}>
+        <div style={{ display: cart.order_items?.length > 0 ? "block" : "none" }}>
           {
             method === null && <Box sx={{ mt: '20px' }}>
               <Box>
@@ -207,11 +207,10 @@ const CheckoutWidget = (props) => {
                 <Button
                   key={'button-delivery'}
                   onClick={async () => {
-                    if (cart.customer_id == null && resource.getUserRole() === USER_TYPE.KURE_EMPLOYEE) {
+                    if ((!cart.customer_id || cart.customer_id == 0) && resource.getUserRole() == USER_TYPE.KURE_EMPLOYEE) {
                       customToast.warn("Before proceeding, it's essential to select the customer.");
                       return;
                     }
-                    console.log("cart.customer_id == ", cart.customer_id);
                     await refreshCartHelper(CHECKOUT_TYPE.DELIVERY);
                     setMethod(CHECKOUT_TYPE.DELIVERY);
                   }}

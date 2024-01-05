@@ -4,7 +4,11 @@ import { useEffect, useState, useRef, useCallback } from 'react';
 import { Link as Route } from 'react-router-dom';
 import { SIG_CHANGED_STORE, SIG_CHANNEL, SIG_VALID_CATEGORY_CHANGED } from 'Common/signals';
 import { IDB_TABLES, KureDatabase } from 'services/idb_services/KureDatabase';
-import { firstLetterUpperCase, getDeviceSize } from 'Common/functions';
+import {
+  filterAndSortProducts,
+  firstLetterUpperCase,
+  getDeviceSize
+} from 'Common/functions';
 import { ROUTE } from 'routes/CONSTANTS';
 import { DEVICE_SIZE, EmptyProductCard } from 'Common/constants';
 import ProductCard from './ProductCard';
@@ -71,11 +75,17 @@ const CategoryDetailWidget = ({ category_name, on_category_page }) => {
       products = await db.getAllFromIndex('category_name', categoryName, IDB_TABLES.product_data);
     }
 
-    const selected_products = store_id === null ? [] : products.filter((product) => {
-      if (product.store_id == null) return false;
-      const filters = product.store_id.split(',').filter((id) => Number(id) == store_id);
-      return filters.length > 0;
-    });
+    const selected_products = filterAndSortProducts(products, store_id);
+
+    // const selected_products = store_id === null ? [] : products.filter((product) => {
+    //   if (product.store_id == null) return false;
+    //   if (product.status === "0") return false;
+    //   // Take product.stock and convert it to a float and if it's zero or below we return false.
+    //   const stock = parseFloat(product.stock);
+    //   if (stock <= 0) return false;
+    //   const filters = product.store_id.split(',').filter((id) => Number(id) == store_id);
+    //   return filters.length > 0;
+    // });
     setProductStore(selected_products);
     storeLastProductCount(selected_products.length);
     setIsBusy(false)

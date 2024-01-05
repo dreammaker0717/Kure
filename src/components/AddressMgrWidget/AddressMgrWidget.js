@@ -8,6 +8,7 @@ import { getGUID, getUUID } from "Common/functions";
 import { UsersProfileContext } from 'services/context_services/usersProfileContext';
 import { addBillingProfileToCart, getCart } from 'services/idb_services/orderManager';
 import { addOrUpdateOneAddress } from 'services/idb_services/addressManager';
+import { Country, State } from 'country-state-city';
 
 const AddressMgrWidget = (props) => {
   const uuid = getUUID();
@@ -16,10 +17,10 @@ const AddressMgrWidget = (props) => {
   const [selectedAddress, setSelectedAddress] = useState(null);
   const [selectedOldAddress, setSelectedOldAddress] = useState(null);
   const [isNew, setIsNew] = useState(true);
-  const iso3166 = require('iso-3166-1-alpha-2');
+  const [countryCode, setCountryCode] = useState(Country.getAllCountries());
+  const [stateCode, setStateCode] = useState(State.getAllStates());
 
   useEffect(() => {
-
     getCart().then((res) => {
       const { data, status } = res;
       const cartInfo = data;
@@ -82,9 +83,11 @@ const AddressMgrWidget = (props) => {
   }
 
   const getCountryCode = async (countryName) => {
-    const convertedString = countryName?.replace(/\b\w/g, (char) => char.toUpperCase());;
-    const countriyCode = await iso3166.getCode(convertedString);
-    return countriyCode;
+    return countryCode.filter(element => element.name === countryName)[0]?.isoCode;
+  };
+
+  const getStateCode = async (stateName) => {
+    return stateCode.filter(element => element.name === stateName)[0]?.isoCode;
   };
 
   return (
@@ -121,10 +124,14 @@ const AddressMgrWidget = (props) => {
               })
           })}
           onSubmit={async (values, { setErrors, setStatus, setSubmitting }) => {
-            if (values.country_code == "" && values.country_code == undefined) {
+            if (!values.country_code || values.country_code.length < 2) {
               setErrors({ country_code: 'Please enter the country name accurately.' });
               return;
+            } else if (!values.administrative_area || values.administrative_area.length < 2) {
+              setErrors({ administrative_area: 'Please enter the state name accurately.' });
+              return;
             } else {
+              // Retrieve country code if the country name is longer than 2 characters
               if (values.country_code.length > 2) {
                 const countryCode = await getCountryCode(values.country_code);
                 console.log(countryCode);
@@ -135,6 +142,18 @@ const AddressMgrWidget = (props) => {
                   values.country_code = countryCode;
                 }
               }
+              if (values.administrative_area.length > 2) {
+                // Retrieve state code if the state name is longer than 2 characters
+                const stateCode = await getStateCode(values.administrative_area);
+                console.log(stateCode);
+                if (stateCode == null) {
+                  setErrors({ administrative_area: 'Please enter the state name accurately.' });
+                  return;
+                } else {
+                  values.administrative_area = stateCode;
+                }
+              }
+              // If both codes are present and accurate, proceed with form submission
               onClickSubmit(values);
             }
           }}

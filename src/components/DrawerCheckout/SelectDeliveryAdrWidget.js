@@ -1,13 +1,14 @@
 import React, { useEffect, useMemo, useState } from 'react';
 import { Snackbar, Box, Grid, Button, Typography } from '@mui/material';
 import MuiAlert from '@mui/material/Alert';
+// import ConfirmModal from '../../ConfirmModal/ConfirmModal';
 
 import { CART_STATUS, DELIVERY_STATUS } from 'Common/constants';
 import {
   addBillingProfileToCart,
   postOrderMessage,
   refreshCart,
-  updateCartObject
+  isConfirmDeliveryAddress
 } from "services/idb_services/orderManager";
 
 const Alert = React.forwardRef(function Alert(props, ref) {
@@ -15,7 +16,7 @@ const Alert = React.forwardRef(function Alert(props, ref) {
 });
 const SelectDeliveryAdrWidget = (props) => {
   const { cartInfo, onClickNext, deliveryStatus, setDeliveryStatus, addressList } = props;
-  console.log("cartInfo == ", cartInfo);
+  const [addressInfoList, setAddressInfoList] = useState([]);
   // const { addressList, deliveryInfo, setDeliveryInfo  } = props;
   const [alertInfo, setAlertInfo] = useState({ message: '', open: false });
   // console.log("addressList: ", addressList);
@@ -23,19 +24,21 @@ const SelectDeliveryAdrWidget = (props) => {
   const selected_address = useMemo(() => {
     const billing_info = cartInfo.billing_profile;
     if (!billing_info || Object.keys(billing_info).length == 0) {
-      return null;
-    }
-    if(addressList.length == 0) {
-      addressList = billing_info;
+      setAddressInfoList(addressList);
+      return Object.entries(addressList)[0];
     }
 
+    console.log(billing_info);
     const address_uid = Object.keys(billing_info)[0];
-    let temp_address = Object.entries(addressList).find(([key, value]) => key == address_uid);
-    
-    if(!temp_address) {
-      temp_address = Object.entries(addressList)[0];
+    const temp_address = Object.entries(addressList).find(([key, value]) => key == address_uid);
+
+    if (temp_address) {
+      setAddressInfoList(addressList);
+    } else {
+      setAddressInfoList(billing_info);
     }
-    return temp_address;
+
+    return Object.entries(billing_info)[0];
   }, [cartInfo]);
 
   const is_completed = cartInfo.state == CART_STATUS.COMPLETED
@@ -72,9 +75,9 @@ const SelectDeliveryAdrWidget = (props) => {
   useEffect(() => {
     const billing_info = cartInfo.billing_profile;
     if (!billing_info || Object.keys(billing_info).length == 0) {
-      console.log("addressList>>>", addressList)
-      if (Object.keys(addressList).length == 0) return;
-      const first_uid = Object.keys(addressList)[0];
+      console.log("addressList>>>", addressInfoList)
+      if (Object.keys(addressInfoList).length == 0) return;
+      const first_uid = Object.keys(addressInfoList)[0];
       onChangeAddress(first_uid);
     }
   }, []);
@@ -82,7 +85,7 @@ const SelectDeliveryAdrWidget = (props) => {
   const onChangeAddress = async (address_uid) => {
     // console.log("address_uid: ", address_uid);
     // console.log('billing>>', addressList[address_uid])
-    addBillingProfileToCart({ [address_uid]: addressList[address_uid] });
+    addBillingProfileToCart({ [address_uid]: addressInfoList[address_uid] });
   };
   // console.log("cur addr list: ", addressList)
   // console.log("selected_address: ", selected_address)
@@ -99,16 +102,28 @@ const SelectDeliveryAdrWidget = (props) => {
 
   const onClickDoProcess = async () => {
     let message = '';
+    let is_available_address = false;
+
     if (selected_address === null) {
       message = 'At least one address is required.';
       return;
+    } else {
+      console.log("selected_address == ", selected_address);
+      const address_body = selected_address[1];
+      let temp_country_code = address_body.address?.country_code;
+      let temp_administrative_area = address_body.address?.administrative_area;
+      is_available_address = await isConfirmDeliveryAddress(temp_country_code, temp_administrative_area);
+      console.log("is_available_address == ", is_available_address);
     }
 
-    // Notify the system that the cart should be refreshed.
-    // This is needed because the user has chosen an address.
-    postOrderMessage();
-
-    onClickNext();
+    if (is_available_address) {
+      // Notify the system that the cart should be refreshed.
+      // This is needed because the user has chosen an address.
+      postOrderMessage();
+      onClickNext();
+    } else {
+      setAlertInfo({ open: true, message: "This product cannot be delivered to that address.\n Please check your address again." });
+    }
   };
 
   return (
@@ -120,7 +135,12 @@ const SelectDeliveryAdrWidget = (props) => {
         anchorOrigin={{ vertical: 'top', horizontal: 'center' }}
       >
         <Alert severity="error" sx={{ width: '100%' }}>
-          {alertInfo.message}
+          {alertInfo.message.split("\n").map((item, index) => (
+            <React.Fragment key={index}>
+              {item}
+              <br />
+            </React.Fragment>
+          ))}
         </Alert>
       </Snackbar>
       <Box sx={{ pt: '10px' }}>
@@ -150,7 +170,7 @@ const SelectDeliveryAdrWidget = (props) => {
               }}
               disabled={is_completed}
             >
-              {Object.entries(addressList).map(([key, value]) => {
+              {Object.entries(addressInfoList).map(([key, value]) => {
                 return (
                   <option value={key} key={`deliver-address-${key}`}
                     style={{ color: value.phone == '' ? '#fa7274' : '' }}>
@@ -166,7 +186,7 @@ const SelectDeliveryAdrWidget = (props) => {
                 <Button
                   onClick={onClickEdit}
                   disabled={
-                    Object.keys(addressList).length === 0 && addressList.constructor === Object
+                    Object.keys(addressInfoList).length === 0 && addressInfoList.constructor === Object
                   }
                   variant="outlined"
                   color="info"

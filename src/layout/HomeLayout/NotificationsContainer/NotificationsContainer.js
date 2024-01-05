@@ -5,12 +5,14 @@ import NotificationAlertButton from './NotificationAlertButton';
 import { USER_TYPE } from 'Common/constants';
 import NotificationDrawerWidget from './NotificationDrawerWidget/NotificationDrawerWidget';
 import { IDB_TABLES, KureDatabase } from 'services/idb_services/KureDatabase';
-import { SIG_CHANNEL, SIG_ORDER_SYNCHED, SIG_AUTH_CHANGED, SIG_ORDER_LIST_CHANGED } from 'Common/signals';
+import { SIG_CHANNEL, SIG_ORDER_SYNCHED, SIG_AUTH_CHANGED, SIG_ORDER_LIST_CHANGED, SIG_ORDERS_SYNCHED, SIG_SYNCED_ORDERS_CONFIRM_MODAL, SIG_ON_REFRESH_MESSAGE } from 'Common/signals';
 import { CommonDataIndex, useCommonData } from 'services/context_services/commonDataContext';
 import { makeStyles } from '@mui/styles';
 import { getNotificationPermission } from 'services/storage_services/state_services';
 import NotificationsActiveIcon from '@mui/icons-material/NotificationsActive';
 import StoreSelectModal from '../../../components/SetNotificationModal/SetNotificationModal';
+import ShowSyncedOrderResultModal from 'components/ShowSyncedOrderResultModal/ShowSyncedOrderResultModal';
+import { getAllUnreadMessageCount, getUnreadMessage } from 'services/idb_services/messageTracker';
 
 const resource = new Resource();
 const db = new KureDatabase();
@@ -78,11 +80,17 @@ const NotificationsContainer = (props) => {
   const { values: commonData, setValue: setCommonValue } = useCommonData();
   const openNotificationDrawer = commonData[CommonDataIndex.OPEN_NOTIFICATION_DRAWER];
   const [orders, setOrders] = useState([]);
+  const [syncedOrders, setSyncedOrders] = useState([]);
+  const [newMessageCounts, setNewMessageCounts] = useState(0);
+  const [newMessages, setNewMessages] = useState([]);
   const [openNotificationModal, setOpenNotificationModal] = useState(false);
+  const [openOrdersSyncedModal, setOpenOrdersSyncedModal] = useState(false);
   const [notificationPermission, setNotificationPermission] = useState(false);
   const [isEmployee, setIsEmployee] = useState(false);
+  const [isAnimation, setIsAnimation] = useState(false);
   const classes = useStyles();
   const isLogin = localStorage.getItem('kure-user-info');
+  let new_message_counts;
 
   const setOpenNotificationDrawer = (v) => {
     setCommonValue(CommonDataIndex.OPEN_NOTIFICATION_DRAWER, v);
@@ -119,22 +127,78 @@ const NotificationsContainer = (props) => {
             setIsEmployee(true);
           }
           break;
+        case SIG_ORDERS_SYNCHED:
+          let temp_orders = [];
+          console.log("----------SyncedOrderResult----------");
+          console.log(temp_orders);
+          data.data?.forEach(element => {
+            temp_orders.push(element.data);
+          });
+          if (temp_orders.length > 1) {
+            setOpenOrdersSyncedModal(true);
+            setSyncedOrders(temp_orders);
+          }
+          console.log(temp_orders);
+          break;
+        case SIG_SYNCED_ORDERS_CONFIRM_MODAL:
+          console.log("----------SIG_SYNCED_ORDERS_CONFIRM_MODAL----------");
+          if (data.length > 1 && !isEmployee) {
+            setOpenOrdersSyncedModal(true);
+            setSyncedOrders(data);
+          }
+          new_message_counts = await getAllUnreadMessageCount();
+          if (new_message_counts > 0) {
+            setIsAnimation(true);
+          } else {
+            setIsAnimation(false);
+          }
+          break
+        case SIG_ON_REFRESH_MESSAGE:
+          console.log("----------SIG_ON_REFRESH_MESSAGE----------");
+          new_message_counts = await getAllUnreadMessageCount();
+          console.log("new_message_counts == ",new_message_counts);
+          setNewMessageCounts(new_message_counts);
+          if (new_message_counts > 0) {
+            setIsAnimation(true);
+          } else {
+            setIsAnimation(false);
+          }
+          break;
+
       }
     });
   }, [openNotificationDrawer, commonData[CommonDataIndex.SEL_STORE]]);
 
 
   useEffect(() => {
+    const fetchData = async () => {
+      let temp = await getMessageCounts();
+      if (temp > 0) {
+        setIsAnimation(true);
+      } else {
+        setIsAnimation(false);
+      }
+    };
+
     getPermission();
+    fetchData();
+
     if (resource.getUserRole() === USER_TYPE.KURE_EMPLOYEE) {
       setIsEmployee(true);
     }
-  }, []);
+  }, [newMessageCounts]);
 
   const getOrders = async () => {
     const orders_list = (await db.getAll(IDB_TABLES.commerce_order)).filter(x => x.store_id == commonData[CommonDataIndex.SEL_STORE]).sort(({ changed: a }, { changed: b }) => b - a);
-    //console.log("orders_list: ", orders_list)
     setOrders(orders_list);
+  }
+
+  const getMessageCounts = async () => {
+    new_message_counts = await getAllUnreadMessageCount();
+    setNewMessageCounts(new_message_counts);
+    let new_messages = await getUnreadMessage();
+    setNewMessages(new_messages);
+    return new_message_counts;
   }
 
   const onClickChangeNotification = () => {
@@ -165,7 +229,9 @@ const NotificationsContainer = (props) => {
                   <Box style={NotificationGroup}>
                     <Typography style={NotificationTextStyle2} onClick={onClickChangeNotification}>Enable Notifications</Typography>
                     <NotificationAlertButton
-                      notificationCount={orders.length}
+                      notificationCount={newMessageCounts}
+                      newMessages={newMessages}
+                      isAnimation={isAnimation}
                       setOpenNotificationDrawer={setOpenNotificationDrawer}
                     />
                   </Box>
@@ -179,10 +245,12 @@ const NotificationsContainer = (props) => {
             {isLogin == null ? <></> : (
               isEmployee ?
                 <NotificationAlertButton
-                  notificationCount={orders.length}
+                  notificationCount={newMessageCounts}
+                  newMessages={newMessages}
+                  isAnimation={isAnimation}
                   setOpenNotificationDrawer={setOpenNotificationDrawer}
                 />
-              : <></>
+                : <></>
             )}
           </>
       }
@@ -190,6 +258,8 @@ const NotificationsContainer = (props) => {
       <NotificationDrawerWidget
         orders={orders}
         setOrders={setOrders}
+        newMessageCounts={newMessageCounts}
+        newMessages={newMessages}
         openNotificationDrawer={openNotificationDrawer}
         setOpenNotificationDrawer={setOpenNotificationDrawer}
       />
@@ -201,6 +271,16 @@ const NotificationsContainer = (props) => {
         }}
         onCancel={(v) => {
           setOpenNotificationModal(false);
+        }}
+      />
+      <ShowSyncedOrderResultModal
+        open={openOrdersSyncedModal}
+        orders={syncedOrders}
+        onOK={(v) => {
+          setOpenOrdersSyncedModal(false);
+        }}
+        onCancel={(v) => {
+          setOpenOrdersSyncedModal(false);
         }}
       />
     </>

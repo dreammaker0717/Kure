@@ -11,16 +11,33 @@ import { Resource } from 'services/api_services/Resource';
 
 import {
   SIG_ADDRESS_LIST_CHANGED,
+  SIG_CASH_AMOUNT_PANEL,
   SIG_AUTH_CHANGED,
   SIG_CHANNEL,
   SIG_CHECKOUT_COMPLETE,
 } from 'Common/signals';
-
+import {
+  getCalculatedCartReturnTotals,
+  getCalculatedCartTotals,
+  convertToNumber
+} from 'Common/functions';
 import DeliverCompleteWidget from 'components/DrawerCheckout/DeliverCompleteWidget';
 import { refreshCart } from "services/idb_services/orderManager";
 
 function CheckoutAddressDelivery(props) {
   const { onClickChooseMethod, onClickConfirmCheckout, profileData, cartInfo, can_submit } = props;
+  const cartTotals = useMemo(() => getCalculatedCartTotals(cartInfo), [cartInfo]);
+  const cartReturnTotals = useMemo(() => getCalculatedCartReturnTotals(cartInfo), [cartInfo]);
+  const cashAmount = useMemo(() => {
+    if (cartInfo != null && cartInfo.payment && cartInfo.payment != "") {
+      return convertToNumber(cartInfo.payment);
+    } else {
+      return 0;
+    }
+  }, [cartInfo]);
+  const total = convertToNumber(cartTotals.total, 0);
+  const return_total = convertToNumber(cartReturnTotals.total, 0);
+  const overpaid_amount = Math.round((cashAmount - total + return_total) * 100) / 100;
   const [deliveryStatus, setDeliveryStatus] = useState(DELIVERY_STATUS.SelectAddress);
   const resource = new Resource();
 
@@ -48,6 +65,9 @@ function CheckoutAddressDelivery(props) {
         case SIG_CHECKOUT_COMPLETE:
           setDeliveryStatus(DELIVERY_STATUS.SelectAddress);
           break;
+        case SIG_CASH_AMOUNT_PANEL:
+          setDeliveryStatus(DELIVERY_STATUS.Checkout);
+          break;
       }
     });
   }, []);
@@ -72,6 +92,11 @@ function CheckoutAddressDelivery(props) {
       setDeliveryStatus(DELIVERY_STATUS.AddCoupon);
     } else if (deliveryStatus.value === DELIVERY_STATUS.Complete.value && resource.getUserRole() !== USER_TYPE.CUSTOMER) {
       setDeliveryStatus(DELIVERY_STATUS.Checkout);
+      if (overpaid_amount == 0) {
+        setDeliveryStatus(DELIVERY_STATUS.AddCoupon);
+      } else {
+        setDeliveryStatus(DELIVERY_STATUS.Checkout);
+      }
     }
   };
   const onClickNext = () => {
@@ -84,7 +109,11 @@ function CheckoutAddressDelivery(props) {
     } else if (deliveryStatus.value === DELIVERY_STATUS.AddCoupon.value && resource.getUserRole() === USER_TYPE.CUSTOMER) {
       setDeliveryStatus(DELIVERY_STATUS.Complete);
     } else if (deliveryStatus.value === DELIVERY_STATUS.AddCoupon.value && resource.getUserRole() !== USER_TYPE.CUSTOMER) {
-      setDeliveryStatus(DELIVERY_STATUS.Checkout);
+      if (overpaid_amount == 0) {
+        setDeliveryStatus(DELIVERY_STATUS.Complete);
+      } else {
+        setDeliveryStatus(DELIVERY_STATUS.Checkout);
+      }
     } else if (deliveryStatus.value === DELIVERY_STATUS.Checkout.value) {
       setDeliveryStatus(DELIVERY_STATUS.Complete);
     } else if (deliveryStatus.value === DELIVERY_STATUS.Complete.value) {

@@ -10,10 +10,11 @@ import CartProductListWidget from './DrawerCheckoutWidgets/CartProductListWidget
 const useStyles = makeStyles((theme) => ({
   card: {
     margin: '20px 0',
-    backgroundColor: theme.palette.background.paper,
+    overflow: 'visible !important',
+    backgroundColor: "#272727",
   },
   title: {
-    color: theme.palette.text.primary,
+    color: "#ffffff",
   },
   bodyText: {
     color: theme.palette.text.secondary,
@@ -34,6 +35,7 @@ const OneSummaryItem = (props) => {
       xs={9.5}
       sx={{
         // maxWidth:"250px",
+        color: "#ffffff",
         whiteSpace: 'nowrap',
         overflow: 'hidden',
         textOverflow: 'ellipsis',
@@ -41,16 +43,16 @@ const OneSummaryItem = (props) => {
     >
       {title}
     </Grid>
-    <Grid item xs={2.5} style={{ textAlign: 'right' }}>
+    <Grid item xs={2.5} style={{ textAlign: 'right', color: "#ffffff" }}>
       {value}
     </Grid>
   </Grid>
 }
 
-function OrderNotice({ submitTempData }) {
+function SyncedOrderNotice({ submitTempData }) {
   const classes = useStyles();
   const resource = new Resource();
-  const [tempCart, setTempCart] = useState(submitTempData.cart);
+  const [tempCart, setTempCart] = useState(submitTempData);
   const { profileData } = useContext(UsersProfileContext);
   const cartTotals = useMemo(() => getCalculatedCartTotals(tempCart), [tempCart]);
   const cartReturnTotals = useMemo(() => getCalculatedCartReturnTotals(tempCart), [tempCart]);
@@ -79,19 +81,20 @@ function OrderNotice({ submitTempData }) {
           <Typography variant="h5" component="h2" className={classes.title} gutterBottom>
             Your order #{submitTempData.order_id}
           </Typography>
-          <Typography variant="body1" className={classes.bodyText} gutterBottom>
-            Store Name: {submitTempData.store_name} <br />
-            Store Address: {submitTempData.store_address} <br />
-            Phone Number: {submitTempData.store_phone}
-          </Typography>
+          {/* <Typography variant="body1" className={classes.bodyText} gutterBottom>
+            Store Name: {submitTempData.data.store_name} <br />
+            Store Address: {submitTempData.data.store_address} <br />
+            Phone Number: {submitTempData.data.store_phone}
+          </Typography> */}
         </Box>
         <Box>
-          {is_customer && <Typography variant="body1" className={classes.bodyText} gutterBottom>
+          {/* {is_customer && <Typography variant="body1" className={classes.bodyText} gutterBottom>
             Sent to: {tempCart.customer_id ? getProfileById(tempCart.customer_id) : 'N/A'}
-          </Typography>}
+          </Typography>} */}
           <CartProductListWidget
             cart={tempCart}
             is_disabled={true}
+            color={"white"}
           />
           {total > 0 && (
             <Box sx={{ pt: '18px' }}>
@@ -183,4 +186,4 @@ function OrderNotice({ submitTempData }) {
   );
 }
 
-export default OrderNotice;
+export default SyncedOrderNotice;

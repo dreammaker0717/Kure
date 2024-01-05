@@ -19,7 +19,12 @@ import {
 import {
   SIG_ON_REFRESH_CART,
   SIG_ORDER_SYNCHED,
-  SIG_ORDER_LIST_CHANGED
+  SIG_ORDERS_SYNCHED,
+  SIG_ORDER_LIST_CHANGED,
+  SIG_SYNCED_ORDERS_CONFIRM_MODAL,
+  SIG_ON_REFRESH_MESSAGE,
+  SIG_PRODUCT_STOCK_CHANGED,
+  SIG_CASH_AMOUNT_PANEL
 } from 'Common/signals';
 import { getStoreId, getLoggedInUserId, storeGetCashierId } from 'services/storage_services/storage_functions';
 import { IDB_TABLES, KureDatabase } from 'services/idb_services/KureDatabase';
@@ -51,6 +56,7 @@ import {
   idbSetActiveStoreId
 } from './configManager';
 import { idbCustomerLoggedIn } from "services/idb_services/userManager";
+import { setUnreadMessage } from "services/idb_services/messageTracker";
 
 const resource = new Resource();
 const db = new KureDatabase();
@@ -98,7 +104,6 @@ export const eventUserSwitchedStores = async () => {
       await fetchOrderNotification();
       broadcastMessage(SIG_ORDER_LIST_CHANGED, null);
       conditions.cashier_id = getLoggedInUserId();
-      console.log(USER_TYPE.KURE_EMPLOYEE);
       break;
   }
 
@@ -299,8 +304,8 @@ export const checkCartProductInventories = async (cart = null, use_existing_prod
   }
 
   // get orders inventories
-  const variations = cart.order_items.map(x => x.purchased_entity?.variation_id);
-  let new_products = cart.order_items.map(x => x.purchased_entity);
+  const variations = cart.order_items?.map(x => x.purchased_entity?.variation_id);
+  let new_products = cart.order_items?.map(x => x.purchased_entity);
   // if (!use_existing_products) {
   //   const drupal_data = await fetchProductDataByVariationIds(variations);
   //   if (!drupal_data) {
@@ -314,12 +319,12 @@ export const checkCartProductInventories = async (cart = null, use_existing_prod
 
   let invalid_products = [];
 
-  for (let i = 0; i < cart.order_items.length; i++) {
+  for (let i = 0; i < cart.order_items?.length; i++) {
     const new_product = new_products.find(x => x?.variation_id == cart.order_items[i].purchased_entity?.variation_id);
     // new_product?.stock = 1;
     if (!new_product) {
       invalid_products.push(cart.order_items[i].purchased_entity?.variation_id);
-      if(cart.order_items[i].purchased_entity) {
+      if (cart.order_items[i].purchased_entity) {
         cart.order_items[i].purchased_entity.stock = 0;
       }
       continue;
@@ -431,7 +436,7 @@ export const processAdjustments = async (cart, variation) => {
   }
 
   // Order item level adjustments.
-  const _result = await pullAdjustment();
+  const _result = await pullAdjustment(cart);
 
   // Loop through the map.
   for (const [key, value] of _result.entries()) {
@@ -455,7 +460,24 @@ export const processAdjustments = async (cart, variation) => {
   }
 };
 
-async function pullAdjustment() {
+export const isConfirmDeliveryAddress = async (country, state) => {
+  let shipping = await db.getAll(IDB_TABLES.adjustment_shipping);
+  let is_available_address = true;
+  shipping = shipping.filter(item => item.status && item.conditions_target_plugin_configuration?.zone);
+  shipping.forEach(item => {
+    item.conditions_target_plugin_configuration.zone.territories.forEach(element => {
+      console.log("======", element.country_code);
+      if (element.country_code !== country || element.administrative_area !== state) {
+        is_available_address = false;
+      }
+    });
+  })
+  console.log("shipping == ", shipping);
+  console.log("store_id == ", getStoreId());
+  return is_available_address;
+}
+
+async function pullAdjustment(cart) {
   let map = new Map();
 
   let taxes = await db.getAll(IDB_TABLES.adjustment_tax);
@@ -488,11 +510,14 @@ async function pullAdjustment() {
   const shipping_group = [];
   for (let i = 0; i < shipping.length; i++) {
     const id = shipping[i].id;
-    const shipping_method_id = shipping[i].shipping_method_id;
-    if (!shipping_group[shipping_method_id]) {
-      shipping_group[shipping_method_id] = [];
+    let storesArray = shipping[i].stores?.split(',').map(Number);
+    if (storesArray.includes(Number(cart.store_id))) {
+      const shipping_method_id = shipping[i].shipping_method_id;
+      if (!shipping_group[shipping_method_id]) {
+        shipping_group[shipping_method_id] = [];
+      }
+      shipping_group[shipping_method_id][id] = shipping[i];
     }
-    shipping_group[shipping_method_id][id] = shipping[i];
   }
 
   // console.log('>> shipping_group:', shipping_group);
@@ -608,6 +633,10 @@ async function processAdjustmentTax(tax, cart, variation, user_profile) {
   if (order_item === undefined) {
     return;
   }
+  // console.log(tax);
+  // console.log(cart);
+  // console.log(variation);
+
 
   // Within the tax type object the store_id is a string.
   if (tax.status && Object.values(tax.configuration.store_ids).includes(cart.store_id.toString())) {
@@ -657,6 +686,7 @@ async function processAdjustmentTax(tax, cart, variation, user_profile) {
     const enable_rounding_adjustment = config.enable_rounding_adjustment;
     const round = config.round;
     const rates = config.rates;
+    console.log("rates == ", rates);
 
     let config_is_cannabis = parseInt(config?.is_cannabis || false);
     let variation_is_cannabis = parseInt(variation?.is_cannabis || false);
@@ -719,9 +749,12 @@ async function processAdjustmentShipping(shipment_conditions, cart) {
   });
 
   const result = filterShippingRules(shipment_conditions, cart.store_id, cart.type, subtotal, cart.billing_profile);
+  console.log("result == ", result);
 
   for (const key in result) {
     const rule = result[key];
+    console.log("rule == ", rule);
+    console.log("cart.adjustments == ", cart.adjustments);
     // Does this rule already exist in the cart.adjustments array?
     const existing_adjustment = cart.adjustments.find(x => x.source_id === rule.shipping_method_id);
     // We want to update the amount and percentage.
@@ -901,7 +934,8 @@ export const getValidQuantityOfProduct = async (variation_id) => {
   const quantity = product?.stock;
   // console.log("product>>", product)
   // check orders
-  const order_list = await db.getAll(IDB_TABLES.commerce_order);
+  let order_list = await db.getAll(IDB_TABLES.commerce_order);
+  order_list = order_list.filter(item => item.state !== "draft");
   let ordered_count = 0;
   for (let i = 0; i < order_list.length; i++) {
     const order_items = Object.entries(order_list[i]['order_items']).map(x => x[1]);
@@ -912,6 +946,15 @@ export const getValidQuantityOfProduct = async (variation_id) => {
   }
   return quantity - ordered_count;
 }
+
+export const getStockProduct = async (variation_id) => {
+  const data = await db.getAllFromIndex('variation_id', variation_id, IDB_TABLES.product_data);
+  if (data.length == 0) return 0;
+  const product = data[0];
+  const quantity = product?.stock;
+  return quantity;
+}
+
 
 function addUpdateOrderItemToCart(cart, variation, quantity, package_uid = null) {
   // Does an order_item exist that contains the same variation_id?
@@ -938,6 +981,7 @@ function addUpdateOrderItemToCart(cart, variation, quantity, package_uid = null)
       package_uids: [],
       type: "default"
     });
+
     if (package_uid != null) {
       cart.order_items[0].package_uids = [package_uid];
     }
@@ -1004,6 +1048,7 @@ function filterShippingRules(data, store_id, order_type, order_total, shipment_a
       if (conditionsConfig.bundles.includes(order_type)) {
         applicable[item.shipping_method_id] = item.shipping_method_id;
         shipping_result_debug[item.id] = true;
+        // shipping_result[item.shipping_method_id] = true;
       } else {
         shipping_result[item.shipping_method_id] = false;
         shipping_result_debug[item.id] = false;
@@ -1046,6 +1091,7 @@ function filterShippingRules(data, store_id, order_type, order_total, shipment_a
       if (result) {
         applicable[item.shipping_method_id] = item.shipping_method_id;
         shipping_result_debug[item.id] = true;
+        shipping_result[item.shipping_method_id] = true;
       } else {
         shipping_result[item.shipping_method_id] = false;
         shipping_result_debug[item.id] = false;
@@ -1057,9 +1103,6 @@ function filterShippingRules(data, store_id, order_type, order_total, shipment_a
       shipping_result_debug[item.id] = true;
     }
   });
-
-  // console.log('shipping_result', shipping_result)
-  // console.log('shipping_result_debug', shipping_result_debug)
 
   let rates = {};
   for (const shipping_id in applicable) {
@@ -1260,9 +1303,12 @@ export const getProductCountFromCart = (cart) => {
   // Count the number of order_item's quantity in the cart.
   let count = 0;
   if (cart.order_items !== undefined) {
+    console.log(cart.order_items);
     for (let i = 0; i < cart.order_items.length; i++) {
       const order_item = cart.order_items[i];
+      // if(order_item.purchased_entity !== undefined) {
       count += parseInt(order_item.quantity);
+      // }
     }
   }
   return count;
@@ -1270,6 +1316,7 @@ export const getProductCountFromCart = (cart) => {
 
 export const syncOrdersWithDrupal = async () => {
   const orders = await db.getAll(IDB_TABLES.commerce_order);
+  let order_sync_result = [];
   // console.log("syncOrdersWithDrupal", orders);
   if (orders == undefined) return;
 
@@ -1278,7 +1325,17 @@ export const syncOrdersWithDrupal = async () => {
   // console.log("waiting_for_submission", waiting_for_submission);
   for (let i = 0; i < waiting_for_submission.length; i++) {
     const order = waiting_for_submission[i];
-    await syncOrderWithDrupal(order);
+    order_sync_result[i] = await syncOrderWithDrupal(order);
+  }
+
+  console.log("order_sync_result == ", order_sync_result);
+  if (order_sync_result.length > 0) {
+    console.log("order_sync_result == ", order_sync_result);
+    broadcastMessage(SIG_ORDERS_SYNCHED, {
+      status: true,
+      data: order_sync_result,
+      message: "Your orders have been synced to the backend."
+    });
   }
 }
 
@@ -1316,11 +1373,13 @@ export const syncOrderWithDrupal = async (order) => {
     try {
       toast_response = await resource.createNewOrder({ ...order, state: temp_state });
     } catch (err) {
-      console.log("syncOneOrderWithDrupal createNewOrder error: ", err)
-      broadcastMessage(SIG_ORDER_SYNCHED, { status: false, data: null, message: "Order failed: " + err });
-      return toastPrepareMessage(false, null, "Order failed: " + err);
+      console.log("syncOneOrderWithDrupal createNewOrder error: ", err);
+      broadcastMessage(SIG_ORDER_SYNCHED, { status: false, data: null, message: "Order failed: " + err.message });
+      return toastPrepareMessage(false, null, "Order failed: " + err.message);
     }
-    // console.log('Toast response: ', toast_response);
+
+    broadcastMessage(SIG_PRODUCT_STOCK_CHANGED);
+
     const { status, data, message } = toast_response;
     if (status == 200) {
       // Update cart.order_id with the new order ID from Drupal. This tells us that this order has been synced.
@@ -1332,6 +1391,13 @@ export const syncOrderWithDrupal = async (order) => {
       if (old_order_id != order.order_id) {
         await db.deleteAllByIdList([old_order_id], IDB_TABLES.commerce_order);
       }
+
+      console.log("order ===== ", order);
+      order.order_items.map(async item => {
+        console.log("item.purchased_entity?.variation_id == ", item.purchased_entity?.variation_id);
+        await fetchProductDataByVariationId(item.purchased_entity?.variation_id);
+      })
+
       broadcastMessage(SIG_ORDER_SYNCHED, { status: true, data: order, message: "Order has been sent successfully." });
       return toastPrepareMessage(true, order, "Order has been sent successfully.");
     } else {
@@ -1380,12 +1446,45 @@ export const fetchOrder = async (order_id = null) => {
   if (orders.length > 0) {
     orders[0] = await orderParsing(orders[0]);
   }
-  
+
   console.log('fetchOrder orders:', orders[0]);
   const kure_db = new KureDatabase();
   const res = await kure_db.updateOrAdd(orders[0], IDB_TABLES.commerce_order);
+
+  const unread_messages = await db.getAll(IDB_TABLES.unread_messages);
+  if (res && unread_messages) {
+    unread_messages.forEach(element => {
+      if (element.type == res.state) {
+        if (!element.entity_id.includes(res.order_id)) {
+          element.count += 1;
+          element.entity_id.push(res.order_id);
+        }
+      }
+    });
+  }
+  setUnreadMessage(unread_messages);
   broadcastMessage(SIG_ORDER_LIST_CHANGED, null);
+  broadcastMessage(SIG_ON_REFRESH_MESSAGE);
   return res;
+}
+
+export const getUpdatedOrderList = async () => {
+  const store_id = await getStoreId();
+  const cartList = await db.getAll(IDB_TABLES.commerce_order);
+  const filteredCartList = cartList.filter(item => item.store_id == store_id);
+  let latestCart = null;
+
+  if (filteredCartList.length > 0) {
+    latestCart = filteredCartList.reduce((latest, current) => {
+      if (!latest || parseInt(current.changed) > parseInt(latest.changed)) {
+        return current;
+      }
+      return latest;
+    });
+  }
+
+  const updated_list = await fetchOrderNotification();
+  return filteredCartList;
 }
 
 export const orderParsing = async (order) => {
@@ -1515,6 +1614,21 @@ const mergeCart = async () => {
     // Now refresh the cart. We might have changed the quantity of an item.
     await refreshCart();
   }
+}
+
+export const notificationForOrders = async (orders_payload) => {
+  let synced_orders_list = [];
+  await Promise.all(orders_payload.map(async element => {
+    const temp = await fetchOrder(element.entity_id);
+    console.log(temp);
+    synced_orders_list.push(temp);
+  }));
+  console.log("synced_orders_list == ", synced_orders_list);
+
+  broadcastMessage(SIG_SYNCED_ORDERS_CONFIRM_MODAL, synced_orders_list);
+}
+export const cashAmountPanel = () => {
+  broadcastMessage(SIG_CASH_AMOUNT_PANEL);
 }
 
 /**

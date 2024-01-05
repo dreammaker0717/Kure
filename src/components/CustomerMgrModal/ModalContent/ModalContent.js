@@ -73,7 +73,7 @@ const ModalContent = ({ selectedCustomer, setSelectedCustomer, setSubmitIsDisabl
       console.log(customer_name);
       setLinkedCustomerName(customer_name)
     } else {
-      setCurrentTokenWorksId(selectedCustomer.tokenworks_id);
+      setCurrentTokenWorksId(tokenworks_id);
     }
   };
 

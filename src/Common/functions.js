@@ -6,6 +6,39 @@ import { DEVICE_SIZE, OrderProductType } from './constants';
 
 const { v4: uuidv4 } = require('uuid');
 
+export const filterAndSortProducts = (products, store_id = null) => {
+  // Filter products
+  let filteredProducts = products.filter(product => {
+    if (product.status === "0") return false;
+
+    // Take product.stock and convert it to a float and if it's zero or below, we return false.
+    let stock = parseFloat(product.stock);
+    if (stock <= 0) return false;
+
+    // If store_id is provided, filter by store_id
+    if (store_id !== null) {
+      let filters = product.store_id.split(',');
+      return filters.includes(String(store_id));
+    }
+
+    return true; // Consider all products that pass the previous checks
+  });
+  // If there are no filtered products, return an empty array
+  if (filteredProducts.length === 0) return [];
+
+  // Sort filtered products by product.expiring_date (oldest first)
+  filteredProducts.sort((a, b) => new Date(a.expiring_date) - new Date(b.expiring_date));
+
+  // Remove newer duplicates which have the same link
+  const seenLinks = new Set();
+  return filteredProducts.filter(product => {
+    const identifier = product.link;
+    const duplicate = seenLinks.has(identifier);
+    seenLinks.add(identifier);
+    return !duplicate;
+  });
+}
+
 /**
  * Take a string, 'foo_bar', and return 'Foo Bar'.
  *
@@ -53,7 +86,7 @@ export const convertTimestampToDate = (timestamp) => {
     // It's likely in seconds (PHP timestamp), convert it to milliseconds (JS timestamp)
     timestampNumber *= 1000;
   }
-  
+
   const _time = new Date(parseInt(timestampNumber));
   return `${_time.toLocaleDateString()} ${_time.toLocaleTimeString()}`;
 }
@@ -174,6 +207,7 @@ export const backgroundServiceMessenger = async (type) => {
   try {
     // Register the service worker
     const registration = await navigator.serviceWorker.register('./sw.js');
+    const registration_firebase = await navigator.serviceWorker.register('./firebase.js');
 
     // Check if the service worker is active
     if (registration.active) {
@@ -181,6 +215,7 @@ export const backgroundServiceMessenger = async (type) => {
 
       // If the service worker is active, register the sync
       await registration.sync.register(type);
+      await registration_firebase.sync.register(type);
       console.log('Sync registered successfully');
       return true;
     } else {
@@ -280,8 +315,8 @@ export const getCalculatedCartTotals = (cart) => {
   // We process order_items first because they contain the retail price.
   // Two things happen here: 1) Sum the subtotal for each order item, 2) Place adjustments into our map. We want to sort
   // them by weight. Make sure the adjustment is simplified in order to display each one to the user.
-  cart.order_items.forEach((order_item) => {
-    if (order_item.type === OrderProductType.return) {
+  cart.order_items?.forEach((order_item) => {
+    if (order_item.type === OrderProductType.return && !order_item.purchased_entity) {
       return;
     }
 
@@ -303,16 +338,16 @@ export const getCalculatedCartTotals = (cart) => {
   // Place adjustments into our map. We want to sort them by weight. Make sure the adjustment is simplified in order to
   // display each one to the user.
 
-  // cart.adjustments.forEach((adjustment) => {
-  //   adjustments.push({
-  //     weight: adjustment.weight,
-  //     data: {
-  //       label: adjustment.label,
-  //       value: adjustment.amount.number
-  //     }
-  //   });
-  //   subtotal_changes += parseFloat(adjustment.amount.number);
-  // });
+  cart.adjustments.forEach((adjustment) => {
+    adjustments.push({
+      weight: adjustment.weight,
+      data: {
+        label: adjustment.label,
+        value: adjustment.amount.number
+      }
+    });
+    subtotal_changes += parseFloat(adjustment.amount.number);
+  });
 
   // Make sure the final sort order is by weight, ascending.
   adjustments = adjustments.sort((a, b) => a.weight - b.weight);
@@ -328,14 +363,14 @@ export const getCalculatedCartTotals = (cart) => {
     }
   });
 
-  // console.log("Subtotal", subtotal)
-  // console.log("Adjustments: ", adjustments)
-  // console.log("Total: ", subtotal + subtotal_changes)
+  console.log("Subtotal", subtotal)
+  console.log("Adjustments: ", adjustments)
+  console.log("Total: ", subtotal + subtotal_changes)
 
   return {
-    subtotal: subtotal,
+    subtotal: parseFloat(subtotal).toFixed(2),
     adjustments: adjustments,
-    total: subtotal + subtotal_changes,
+    total: parseFloat(subtotal + subtotal_changes).toFixed(2),
   };
 }
 
@@ -356,7 +391,7 @@ export const getCalculatedCartReturnTotals = (cart) => {
   // We process order_items first because they contain the retail price.
   // Two things happen here: 1) Sum the subtotal for each order item, 2) Place adjustments into our map. We want to sort
   // them by weight. Make sure the adjustment is simplified in order to display each one to the user.
-  cart.order_items.forEach((order_item) => {
+  cart.order_items?.forEach((order_item) => {
     if (order_item.type !== OrderProductType.return) {
       return;
     }
@@ -500,3 +535,8 @@ export const encryptData = (rawString) => {
   iv = CryptoJS.enc.Hex.stringify(iv);
   return btoa(body + ":" + iv);
 }
+
+
+// export const startGlobalInterval = (callback, intervalTime) => {
+//   return setInterval(callback, intervalTime);
+// };

@@ -14,7 +14,7 @@ import CartButtonsWidget from './DrawerCheckoutWidgets/CartButtonsWidget';
 import {
   SIG_AUTH_CHANGED,
   SIG_CHANNEL,
-  SIG_CHECKOUT_COMPLETE,
+  SIG_TOKENWORKS_SYNCED,
   SIG_CUSTOMER_REMOVED,
   SIG_DRUPAL_COMPLETE_ORDER,
   SIG_FINISH_REQUEST_USERS_PROFILE,
@@ -79,7 +79,7 @@ const resource = new Resource();
 function DrawerCheckout() {
   const { values: commonData, setValue: setCommonData } = useCommonData();
   const { values: cartData, setValue: setCartData } = useCartData();
-  const { profileData } = useContext(UsersProfileContext);
+  const { profileData, setProfileData } = useContext(UsersProfileContext);
   const ref = useRef();
   const is_logged_in = commonData[CommonDataIndex.IS_LOGGED_IN];
   const open = commonData[CommonDataIndex.OPEN_CART_DRAWER];
@@ -95,7 +95,7 @@ function DrawerCheckout() {
   const [openStoreModal, setOpenStoreModal] = useState(false);
   // const [userRole, setUserRole] = useState(null);
   // const [processingUserProfileData, setProcessingUserProfileData] = useState(true);
-  const virtual_product_count = !cart ? 0 : cart.order_items.length;
+  const virtual_product_count = !cart ? 0 : cart.order_items?.length;
   const processingUserProfileData = !profileData || Object.keys(profileData).length == 0;
   // console.log(profileData)
   const resource = new Resource();
@@ -104,14 +104,14 @@ function DrawerCheckout() {
     // console.log("cart.order_id : ", cart.order_id);
     checkCartProductInventories(cart);
   }, [cart && cart.order_id]);
-  
+
   const getUsrRole = async () => {
     const role = await resource.getUserRole();
     // console.log(role);
     // setUserRole(role);
     return role;
   };
-  
+
   // useEffect(() => {
   //   getUsrRole();
   // }, []);
@@ -188,13 +188,20 @@ function DrawerCheckout() {
           // setProcessingUserProfileData(false);
           break;
 
+        case SIG_TOKENWORKS_SYNCED:
+          console.log("SIG_TOKENWORKS_SYNCED == ", event.data);
+          let new_customer = event.data.data;
+          profileData[new_customer.uid] = { ...new_customer };
+          await setProfileData(profileData);
+          break;
+
         case SIG_ORDER_SYNCHED:
           const { status, data, message } = _data;
           console.log('DrawerCheckout.js: SIG_ORDER_SYNCHED', status, data, message);
           if (status == true) {
+            customToast.success(message);
             console.log('SENT DATA: ', data);
             await idbSetActiveCart(null);
-            customToast.success(message);
             broadcastMessage(SIG_CUSTOMER_REMOVED);
             broadcastMessage(SIG_ON_REFRESH_CART);
 
@@ -203,6 +210,7 @@ function DrawerCheckout() {
             if (data) {
               const store_info = await getCommerceStoreById(data.store_id);
               setSubmitTempData({
+                cart: data,
                 order_id: data.order_id,
                 store_name: store_info.name,
                 store_address: getAddressString(store_info),
@@ -214,14 +222,20 @@ function DrawerCheckout() {
             }
           } else {
             setSubmitTempData(null);
-            await finishCartObject(data.order_id, {
+            const temp = await getCartData();
+            console.log(temp);
+            await finishCartObject(data, {
               submission_ready: false
             });
             customToast.error(message);
-            setCart({
-              ...cart,
-              is_busy: false
-            });
+            if (temp) {
+              setCart({
+                ...cart,
+                is_busy: false
+              });
+            } else {
+              setCart(null);
+            }
           }
           break;
       }
@@ -244,10 +258,20 @@ function DrawerCheckout() {
   // }, [profileData]);
   // console.log("profileData:", profileData);
 
-  const setCartFreeze = async () => {
+  /**
+   * Manages the entire cart submission process in an e-commerce system. It starts by retrieving store details,
+   * followed by validating payment amounts, especially for employee users. It then checks product inventory and, if
+   * all conditions are met, finalizes the order. Throughout the process, it updates the cart's status and provides
+   * user feedback via toast notifications. The function also attempts to sync order data with a background service and
+   * clears the cart and temporary data upon completion.
+   *
+   * @returns {Promise<void>}
+   */
+  const processCartSubmission = async () => {
     const store = await getCommerceStoreById(cart.store_id);
 
     setSubmitTempData({
+      cart: cart,
       order_id: cart.order_id,
       store_name: store.name,
       store_address: getAddressString(store),
@@ -270,6 +294,7 @@ function DrawerCheckout() {
         can_submit = balance >= 0;
       }
     }
+
     if (!can_submit) {
       customToast.error('The cash amount you input is not correct.');
       setSubmitTempData(null);
@@ -284,7 +309,7 @@ function DrawerCheckout() {
     }
     console.log('invalid_products: ', invalid_products);
 
-    if (invalid_products.length > 0) {
+    if (invalid_products?.length > 0) {
       customToast.error(`One or more products are out of stock. Please check product list again.`);
       // if (ref && ref.current) {
       //   ref.current.scrollTo(0, 0);
@@ -298,7 +323,8 @@ function DrawerCheckout() {
     }
 
     const order = await finishCartObject(cart.order_id, {
-      submission_ready: true
+      submission_ready: true,
+      order_id_react: cart.order_id
     });
     console.log('focusing order: ', cart);
 
@@ -308,7 +334,8 @@ function DrawerCheckout() {
     });
 
     customToast.success("We're preparing to send your order in a few seconds...");
-    setSubmitTempData({ ...submitTempData, status: TEMP_CART_STATUS.SENDING });
+    console.log(submitTempData);
+    setSubmitTempData({ ...submitTempData, cart: cart, status: TEMP_CART_STATUS.SENDING });
 
     // 1. Attempt to add to the background sync api.
     // 2. If that fails, attempt to send the order to Drupal.
@@ -324,6 +351,10 @@ function DrawerCheckout() {
     if (!sync_order_result) {
       await syncOrderWithDrupal(order);
     }
+    setCart(null);
+    setCartData(CartDataIndex.CUSTOMER_KEYWORD, "");
+    setSubmitTempData(null);
+    await idbSetActiveCart(null);
   };
 
   const onCompleteOrder = async (order_id) => {
@@ -394,35 +425,36 @@ function DrawerCheckout() {
               Here is your shopping cart.
             </Typography>
             {resource.getUserRole() === USER_TYPE.KURE_EMPLOYEE && !processingUserProfileData && can_show_customers && (
-              <CashierNameWidget is_disabled={cart && cart.state == CART_STATUS.COMPLETED} cart={cart} />
+              <CashierNameWidget is_disabled={cart && cart.state == CART_STATUS.COMPLETED} cart={cart}/>
             )}
           </Stack>
 
           {!cart && submitTempData ? (
             <OrderNotice
-              orderNumber={submitTempData.order_id}
-              destinationName={submitTempData.store_name}
-              address={submitTempData.store_address}
-              phone={submitTempData.store_phone}
+              submitTempData={submitTempData}
+            // orderNumber={submitTempData.order_id}
+            // destinationName={submitTempData.store_name}
+            // address={submitTempData.store_address}
+            // phone={submitTempData.store_phone}
             />
           ) : (
             <>
               {cart && cart.state == CART_STATUS.COMPLETED ? (
-                <CompletedCartWidget cart={cart} cartTotals={cartTotals} cartReturnTotals={cartReturnTotals} />
+                <CompletedCartWidget cart={cart} cartTotals={cartTotals} cartReturnTotals={cartReturnTotals}/>
               ) : (
                 <>
-                  {(!cart || cart.order_items.length == 0) && sel_store_info && (
+                  {(!cart || cart.order_items?.length == 0) && sel_store_info && (
                     <>
                       <Box sx={{ ml: '10px', mb: '40px', textAlign: 'center' }}>
                         <Typography variant="h5">
-                          <ReportProblemIcon sx={{ color: '#E67D04', mr: '10px' }} fontSize={'small'} />
+                          <ReportProblemIcon sx={{ color: '#E67D04', mr: '10px' }} fontSize={'small'}/>
                           It seems there's no product in your cart for current store
-                          <br />
+                          <br/>
                           {sel_store_info.name} [{getAddressString(sel_store_info)}]
-                          <br />
+                          <br/>
                           Please add products to your cart or &nbsp;
                           <Typography onClick={onClickChangeStore}
-                            sx={{ textDecoration: 'underline', cursor: 'pointer' }} display="inline">
+                                      sx={{ textDecoration: 'underline', cursor: 'pointer' }} display="inline">
                             change the store here
                           </Typography>
                           .
@@ -432,21 +464,21 @@ function DrawerCheckout() {
                   )}
                   {cart && cart.is_busy && (
                     <Box>
-                      <CartDrupalSyncWidget cart={cart} />
+                      <CartDrupalSyncWidget cart={cart}/>
                     </Box>
                   )}
 
                   {resource.getUserRole() === USER_TYPE.KURE_EMPLOYEE ? (
                     <>
-                      <CartButtonsWidget paneIsOpen={open} />
-                      {cart && !cart.is_busy && <CartProductListWidget cart={cart} setCart={setCart} />}
+                      <CartButtonsWidget paneIsOpen={open}/>
+                      {cart && !cart.is_busy && <CartProductListWidget cart={cart} setCart={setCart}/>}
                     </>
                   ) : (
                     cart &&
                     !cart.is_busy && (
                       <>
-                        <CartButtonsWidget paneIsOpen={open} />
-                        <CartProductListWidget cart={cart} setCart={setCart} />
+                        <CartButtonsWidget paneIsOpen={open}/>
+                        <CartProductListWidget cart={cart} setCart={setCart}/>
                       </>
                     )
                   )}
@@ -463,7 +495,7 @@ function DrawerCheckout() {
                       }}
                     >
                       <Box sx={{ paddingBottom: '0px', display: !method ? 'block' : 'none' }}>
-                        <CustomerSelectWidget />
+                        <CustomerSelectWidget/>
                       </Box>
                     </div>
                   )}
@@ -471,7 +503,7 @@ function DrawerCheckout() {
                   {can_show_drawer_info && can_show_customers && (
                     <Box sx={{ pt: '10px' }}>
                       {!cart.is_busy && resource.getUserRole() === USER_TYPE.KURE_EMPLOYEE && !processingUserProfileData && (
-                        <SelectCustomerInfoWidget cart={cart} method={method} />
+                        <SelectCustomerInfoWidget cart={cart} method={method}/>
                       )}
                     </Box>
                   )}
@@ -482,7 +514,7 @@ function DrawerCheckout() {
                         <Box sx={{ paddingBottom: '33px' }}>
                           <CheckoutWidget
                             cart={cart}
-                            setCartFreeze={setCartFreeze}
+                            processCartSubmission={processCartSubmission}
                             processingUserProfileData={processingUserProfileData}
                             cashierIdExists={cashierIdExists}
                             method={method}
@@ -494,15 +526,15 @@ function DrawerCheckout() {
                       )}
                     </>
                   ) : (
-                    <DrawerAuth />
+                    <DrawerAuth/>
                   )}
                 </>
               )}
               <Box sx={{ paddingBottom: '53px' }}></Box>
-              {cart && cart.order_items.length > 0 && (
+              {cart && cart.order_items?.length > 0 && (
                 <>
                   <Typography>
-                    <CancelOutlinedIcon color={'error'} fontSize={'small'} />
+                    <CancelOutlinedIcon color={'error'} fontSize={'small'}/>
                     *WARNING: Products sold here can expose you to chemicals including Δ9-Tetrahydrocannabinol (Δ9 -
                     THC), which are known
                     to the State of California to cause birth defects or other reproductive harm. For more information

@@ -30,6 +30,10 @@ if (process.env.NODE_ENV === 'production') {
     swSrc: './src/src-sw.js',
     swDest: 'sw.js',
   }));
+  webpackPlugins.push(new InjectManifest({
+    swSrc: './src/src-firebase.js',
+    swDest: 'firebase.js',
+  }));
 }
 module.exports = {
   context: __dirname,

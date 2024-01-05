@@ -28,6 +28,8 @@ const NotificationDrawerWidget = (props) => {
   const {
     orders,
     setOrders,
+    newMessageCounts,
+    newMessages,
     openNotificationDrawer,
     setOpenNotificationDrawer,
   } = props;
@@ -82,6 +84,8 @@ const NotificationDrawerWidget = (props) => {
             <OrderContent
               orders={orders}
               setOrders={setOrders}
+              newMessageCounts={newMessageCounts}
+              newMessages={newMessages}
               openNotificationDrawer={openNotificationDrawer}
             />
           </TabPanel>

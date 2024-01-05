@@ -21,7 +21,8 @@ class Resource {
     // token refresh.
     expire_margin: 0,
     // User info storage name.
-    user_info: 'kure-user-info'
+    user_info: 'kure-user-info',
+    new_message_counts: 'new_message_counts'
   };
 
   config;
@@ -483,9 +484,15 @@ class Resource {
     }
     // console.log("RESPONSE: ", response);
     if (response == "offline") {
+      let message = "";
+      if (resource_path == "/order-data") {
+        message = "We will save your data but you're currently offline.\nWe will submit your data when you're back online."
+      } else {
+        message = "The device is offline.";
+      }
       return Promise.resolve({
         status: false,
-        message: "The device is offline.",
+        message: message,
         data: null,
       })
     }

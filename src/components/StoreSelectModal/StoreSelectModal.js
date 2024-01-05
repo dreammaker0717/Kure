@@ -7,9 +7,9 @@ import ListItemText from '@mui/material/ListItemText';
 import ListItemAvatar from '@mui/material/ListItemAvatar';
 import ListItemButton from '@mui/material/ListItemButton';
 import Avatar from '@mui/material/Avatar';
-
 import StoreIcon from '@mui/icons-material/Store';
-import { getAddressString } from 'Common/functions';
+import { broadcastMessage, getAddressString } from 'Common/functions';
+import { SIG_VALID_CATEGORY_CHANGED } from "Common/signals";
 import ModalTitle from './ModalTitle';
 import { idbGetActiveStoreId, idbSetActiveStoreId } from 'services/idb_services/configManager';
 import { extractValidCategories } from 'services/idb_services/productManager';
@@ -33,7 +33,7 @@ const style = {
 
 const StoreSelectModal = (props) => {
   const { open, onOK, onCancel } = props;
-  const { values: commonData, setValueObjects: setCommonDataList  } = useCommonData();
+  const { values: commonData, setValueObjects: setCommonDataList } = useCommonData();
   const [selStoreId, setSelStoreId] = useState(commonData[CommonDataIndex.SEL_STORE]);
   const stores = commonData[CommonDataIndex.STORES];
   // const sel_store = commonData[CommonDataIndex.SEL_STORE];
@@ -41,11 +41,13 @@ const StoreSelectModal = (props) => {
     idbGetActiveStoreId().then((store_id) => {
       setSelStoreId(store_id)
     })
-  }, [open])
-  const onClickStore =async (store_id) => {
+  }, [open]);
+
+  const onClickStore = async (store_id) => {
     const valid_category_list = await extractValidCategories(store_id);
     storeValidCategoryList(store_id, valid_category_list);
-
+    onOK(store_id);
+    broadcastMessage(SIG_VALID_CATEGORY_CHANGED);
     setCommonDataList({
       [CommonDataIndex.SEL_STORE]: store_id,
       [CommonDataIndex.VALID_CATEGORIES]: valid_category_list
@@ -55,12 +57,10 @@ const StoreSelectModal = (props) => {
     await idbSetActiveStoreId(store_id);
     await eventUserSwitchedStores();
     postOrderMessage();
-
-    onOK(store_id);
   }
+
   const onCancelStoreDlg = () => {
     setOpenStoreSelector(false);
-
     onOK(store_id)
   }
   return (
@@ -75,7 +75,7 @@ const StoreSelectModal = (props) => {
       keepMounted={false}
     >
       <Box sx={style}>
-        <ModalTitle onClose={onCancel}/>
+        <ModalTitle onClose={onCancel} />
         <List sx={{ width: '100%', maxWidth: 360, }}>
           {stores.map(store_info => {
             return <ListItemButton
@@ -86,7 +86,7 @@ const StoreSelectModal = (props) => {
             >
               <ListItemAvatar>
                 <Avatar>
-                  <StoreIcon/>
+                  <StoreIcon />
                 </Avatar>
               </ListItemAvatar>
               <ListItemText
@@ -101,7 +101,7 @@ const StoreSelectModal = (props) => {
                     {getAddressString(store_info).map((line, index) => (
                       <React.Fragment key={index}>
                         {line}
-                        {index !== getAddressString(store_info).length - 1 && <br/>}
+                        {index !== getAddressString(store_info).length - 1 && <br />}
                       </React.Fragment>
                     ))}
                   </>

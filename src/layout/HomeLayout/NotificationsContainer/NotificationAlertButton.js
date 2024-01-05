@@ -3,6 +3,7 @@ import { Badge, Box, IconButton, Stack } from '@mui/material';
 import NotificationsTwoToneIcon from '@mui/icons-material/NotificationsTwoTone';
 import { Resource } from 'services/api_services/Resource';
 import { USER_TYPE } from 'Common/constants';
+import { makeStyles } from '@mui/styles';
 import { styled } from '@mui/material/styles';
 import { UsersProfileContext } from 'services/context_services/usersProfileContext';
 import { useEffect } from 'react';
@@ -24,11 +25,25 @@ const style2 = {
     borderRadius: '0px 10px 10px 0px',
 }
 
+const useStyles = makeStyles({
+    animatedButton: {
+      animation: '$moveDown 0.5s infinite alternate', // Animation properties
+    },
+    '@keyframes moveDown': {
+      '0%': {
+        transform: 'translateY(0)', // Initial position
+      },
+      '100%': {
+        transform: 'translateY(10px)', // Translated 10px down
+      },
+    },
+  });
+
 const NotificationAlertButton = (props) => {
-    const { notificationCount, setOpenNotificationDrawer } = props;
+    const { notificationCount, setOpenNotificationDrawer, isAnimation } = props;
     const [notificationPermission, setNotificationPermission] = useState(false);
     const buttonRef = useRef(null);
-
+    const classes = useStyles();
     useEffect(() => {
         async function getPermission() {
             const notificaionPermission = await getNotificationPermission();
@@ -41,13 +56,6 @@ const NotificationAlertButton = (props) => {
 
         getPermission();
     }, []);
-
-    const handleClick = () => {
-        if (cartData[CartDataIndex.CART]) {
-            console.log("bufferbutton123123");
-            buttonRef.current.click();
-        }
-    };
 
     return (
         <div>
@@ -71,6 +79,7 @@ const NotificationAlertButton = (props) => {
                     }}
                     style={notificationPermission ? style2 : style1}
                     ref={buttonRef}
+                    className={isAnimation && classes.animatedButton}
                     onClick={() => setOpenNotificationDrawer(true)}
                 >
                     <IconButton aria-label="notifications" color="success">

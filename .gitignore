@@ -111,6 +111,6 @@ build
 
 .idea
 .vscode
-
+android
 yarn.lock
 package-lock.json

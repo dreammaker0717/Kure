@@ -26,12 +26,12 @@ const HomePage = () => {
         <Box sx={{ maxWidth: '1804px', m: { lg: '0 auto' } }}>
             <Box>
                 {ButtonCategories
-                    .filter(x => categoryList == null || categoryList.includes(x.value))
+                    .filter(x => categoryList === null || categoryList.includes(x.value))
                     .map((button, index) => {
                         return <CategoryDetailWidget key={`category-${button.value}-${index}`}
                             category_name={button.value}
-                            on_category_page={false} 
-                            />;
+                            on_category_page={false}
+                        />;
                     })}
             </Box>
         </Box>

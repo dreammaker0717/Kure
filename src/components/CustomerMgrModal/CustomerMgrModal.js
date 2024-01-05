@@ -21,6 +21,7 @@ const style = {
 const CustomerMgrModal = (props) => {
   const { open, profileData, onOK, onClose, selectedCustomer, setSelectedCustomer } = props;
   const [submitIsDisabled, setSubmitIsDisabled] = useState(true);
+  const [prevStateCustomer, setprevStateCustomer] = useState(selectedCustomer);
 
   // const [customerData, setCustomerData] = useState({
   //   mail: '',
@@ -111,7 +112,6 @@ const CustomerMgrModal = (props) => {
      * }
      */
     const expiration_date = selectedCustomer.medical_user_info.expiration_date;
-    console.log(expiration_date);
     // If is_medical_user is 'Yes', then we need to validate the medical_user_info object.
     if (selectedCustomer.is_medical_user === 'Yes') {
       if (selectedCustomer.medical_user_info.license === undefined || selectedCustomer.medical_user_info.license === '') {
@@ -129,9 +129,6 @@ const CustomerMgrModal = (props) => {
         response.message = 'Please upload a valid license document';
       }
     }
-
-    console.log(selectedCustomer);
-
     return response;
   };
 
@@ -148,6 +145,7 @@ const CustomerMgrModal = (props) => {
 
   const onClickCancel = () => {
     onClose();
+    setSelectedCustomer(prevStateCustomer);
   };
 
   return (

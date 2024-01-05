@@ -24,6 +24,7 @@ import { Resource } from "services/api_services/Resource";
 import { CommonDataIndex, useCommonData } from 'services/context_services/commonDataContext';
 import { CartDataIndex, useCartData } from 'services/context_services/cartDataContext';
 import { customToast } from 'components/CustomToast/CustomToast';
+import { idbGetIsOnline } from 'services/idb_services/configManager';
 
 const CustomerSelectWidget = (props) => {
   const uuid = getUUID();
@@ -232,12 +233,15 @@ const CustomerSelectWidget = (props) => {
       await setProfileData(new_profile);
     } else {
       // delete old customer with guid
-      delete new_profile[customer.uid];
-      setProfileData(new_profile);
-      setKeyword("");
-      // removeSelectedCustomer
-      removeSelectedCustomer(customer.uid);
-      customToast.error(new_customer_res.message)
+      const is_online = await idbGetIsOnline();
+      if(is_online) {
+        delete new_profile[customer.uid];
+        setProfileData(new_profile);
+        setKeyword("");
+        // removeSelectedCustomer
+        removeSelectedCustomer(customer.uid);
+        customToast.error(new_customer_res.message)
+      }
     }
   }
 
